@@ -206,3 +206,13 @@ html[data-theme="dark"] :is(.profile-avatar,.setting-icon){background:#314a3b;co
 /* Assessment notes span the complete passage row. */
 .unified-evaluation .assessment-comment{display:block;width:100%;margin-top:4px}
 .unified-evaluation .assessment-comment input{display:block;width:100%;box-sizing:border-box}
+/* Login branding is centered; forms retain their Arabic reading alignment. */
+.login-minimal .brand{text-align:center;margin-bottom:12px;font-size:30px;line-height:1.4}
+.login-minimal h1{text-align:center;font-size:23px;margin:0 0 28px;line-height:1.5}
+.login-minimal label{text-align:start}
+.login-minimal .demo-button{border-color:transparent;background:transparent;color:var(--green);font-size:14px;margin-top:8px;font-weight:500}
+.login-minimal .demo-button:hover{background:#edf3e9}
+html[data-theme="dark"] .login-minimal .demo-button{background:transparent;color:#c6e8d8}
+html[data-theme="dark"] .login-minimal .demo-button:hover{background:#314a3b}
+
+.save-indicator{flex-shrink:0;text-align:center;font-size:10px;line-height:1.5;padding:5px 12px;color:var(--muted);background:#f5f6f1}.save-indicator[data-state="error"]{background:#fff0e5;color:#9a3d22}.session-state{align-self:flex-start;display:inline-block;font-size:10px;padding:3px 8px;line-height:1.5;border-radius:20px;background:#f5eddc;color:#81602c}.session-state.is-completed{background:#e5eee3;color:#30654a}.session-state-line{margin:-5px 52px 16px 0}html[data-theme="dark"] .save-indicator{background:#17251f}html[data-theme="dark"] .session-state{background:#493f2c;color:#f0d99d}html[data-theme="dark"] .session-state.is-completed{background:#314a3b;color:#bde0c5}html[data-theme="dark"] .save-indicator[data-state="error"]{background:#492f28;color:#ffbaa5}

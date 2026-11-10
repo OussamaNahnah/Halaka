@@ -52,3 +52,9 @@ Student evaluation separates memorization and revision in both tabs. Today's ass
 Create a session by choosing date/time and a group. Its student list shows “لم يُقيّم بعد” until the teacher explicitly finishes that student. Open any student directly; the page shows today's assessments followed by next assignments, without tabs. “إنهاء الطالب” saves entered assessment grades, marks the student recorded, and returns to the list. Previous/next buttons navigate the roster without marking students complete. Save an open assignment or repeat form before finishing or navigating. Finishing marks the student present in this demo. This flow supersedes the earlier attendance-first and automatic-timestamp descriptions above; production model rules remain in the design documents.
 
 The student screen now uses one compact worksheet: today's assessments and next assignments appear together, with memorization/revision labels on each passage. Assignment entry is collapsed until needed. One “إنهاء الطالب” button saves entered grades and completes the student. Adding assignments also preserves entered assessment grades. This replaces the earlier two-step interface.
+
+Created sessions are retained: the session list offers opening and editing, with no session deletion action. Assignment removal remains available. Reset sample data is a demo-only reset.
+
+## Saving and session status
+
+Sessions are saved immediately, initially `in_progress`, and marked `completed` when finished. These states are separate from persistence. The shared indicator reports local saving success or failure; there is no server synchronization yet. Student records start with attendance `not_marked`, not absent. The planned Laravel implementation will persist immediately on the server and restrict parent visibility to completed sessions, as documented in the class diagram.

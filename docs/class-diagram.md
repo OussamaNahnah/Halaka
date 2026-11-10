@@ -44,6 +44,10 @@ class Session {
   int teacher_id
   int group_id
   timestamp timestamp
+  string status
+  uuid client_uuid
+  string sync_status
+  timestamp last_synced_at
 }
 class StudentSession {
   int id
@@ -88,6 +92,13 @@ QuranAssessment "0..1" -- "0..*" QuranAssignment : original assessment for repea
 
 - The four roles are Administrator, Teacher, Student, and Parent. One account can have more than one role.
 - Each session has one teacher and can include several students.
+- Save the session and all student work automatically on the teacher's device from creation onward, including when offline. Creating a session does not require uploading it immediately. Required group, roster, and earlier-assignment data must already be available locally for offline use.
+- Session completion and synchronization are separate: `status` starts as `in_progress` and becomes `completed` when the teacher selects **Finish and send session**. A completed session may still be waiting for upload.
+- A new local session has `sync_status = local_only`. Finishing queues a durable local submission (`pending_upload`); while transmitting, show `uploading`. Only a successful server acknowledgement for the submitted revision changes it to `synced`.
+- If there is no connection or an upload fails, keep the complete submission on the device as `pending_upload`. Show **Waiting to send** with **Retry**; never report success or clear local work before acknowledgement. Recover interrupted uploads as pending when the application restarts.
+- Send the session, attendance, assignments, and assessments together. The server must authorize and validate the submission and save it atomically. Repeated sends of the same submission must not create duplicate sessions or child records; use the stable client UUID and a submission revision/idempotency key.
+- Editing a saved session is allowed; deleting it is not. Edits to an already uploaded session are saved locally, move its sync state to `local_only`, and require another explicit finish-and-send action. Preserve the server's last accepted revision until the new revision is acknowledged. Never mark newer local edits as synced merely because an earlier upload succeeds.
+- An unevaluated student is not automatically absent; attendance and evaluation completion are separate facts.
 - A group has a name and can contain several students. The initial design allows a student to belong to several groups, with each student/group membership stored only once.
 - A session can optionally belong to one group, allowing sessions without a group as well. The teacher is assigned to each session.
 - `StudentSession` records remain the attendance roster for each session. Changing group membership must not change past session records.
@@ -100,13 +111,18 @@ QuranAssessment "0..1" -- "0..*" QuranAssignment : original assessment for repea
 - Preserve the original assessment and grade when assigning a repeat. Assessing the repeat creates a separate assessment and grade linked to the new assignment.
 - Example: a student receives **12/20** for Al-Mulk, ayahs **1–10**. The teacher assigns ayahs **4–6** for the next session, linking the new assignment to that assessment. When ayahs 4–6 are assessed, their new grade is stored separately; the original 12/20 remains unchanged. This score is illustrative; the grading scale is still open.
 - A parent record can exist without a user account, so the school can store contact details now and connect the parent to the system later.
-- A parent with a linked account can view only their children's session records. A student can be linked to more than one parent, and a parent can be linked to several students.
+- A parent with a linked account can view only their children's completed session revisions successfully accepted by the server. Local drafts, pending uploads, and unsent edits are not visible; the last accepted revision remains visible while edits await submission. A student can be linked to more than one parent, and a parent can be linked to several students.
 - Parents should be able to receive notifications in a later phase. The delivery channels and triggering events remain to be decided; no delivery mechanism is implemented yet.
-- An administrator can view all teachers, students, parents, groups, and sessions, including all attendance records, grades, and comments.
+- An administrator can view all teachers, students, parents, groups, and sessions stored on the server, including attendance records, grades, and comments. Work stored only on a teacher's device is unavailable to other accounts until sent.
 
 ## Attribute notes
 
 - `Session.group_id` is optional. In Laravel, use a `group_student` pivot table with a unique `(group_id, student_id)` pair for group memberships.
+- `Session.status` is required and is `in_progress` or `completed`, defaulting to `in_progress`.
+- `Session.client_uuid` is generated on the device when the session is created, stays unchanged across retries, and is unique on the server. `Session.id` remains the server primary key; local records need stable local identifiers before server IDs exist, with references reconciled on upload.
+- `Session.sync_status` is device-local metadata, not a server-controlled visibility flag. Its values are `local_only`, `pending_upload`, `uploading`, and `synced`; default to `local_only`. These fields describe the combined offline/online model; do not treat every local field as a Laravel database column.
+- `Session.last_synced_at` is nullable and records the last server acknowledgement time, not the time of local saving. It remains unchanged during unsent edits or failed retries.
+- Persist local records and queued submissions durably (for example, in IndexedDB). A local save failure must be shown separately from an upload failure; only show **Saved on device** after successful local persistence. Browser storage can be cleared or lost and is not a server backup.
 - `Session.timestamp` stores the session date and time in one field.
 - A teacher uses the name and email from their account. A student record has a name so it can exist without an account.
 - `Student.user_id` and `Parent.user_id` are optional. Each linked user account has at most one parent profile.
@@ -127,3 +143,5 @@ QuranAssessment "0..1" -- "0..*" QuranAssignment : original assessment for repea
 - Decide which events notify parents (for example, attendance or grade updates), which channels to use (in-app, email, or SMS), and whether parents without accounts can receive notifications.
 - Confirm whether students can belong to several groups and whether every session must belong to a group. The initial design allows multiple memberships and optional session groups.
 - Decide whether creating a group session automatically creates its `StudentSession` roster from current group members.
+- Decide how to resolve concurrent edits from multiple devices, including submission version checks and conflict recovery. Until resolved, never silently overwrite a newer server revision.
+- Decide how long to retain acknowledged local submissions, how offline data is refreshed, and whether automatic retry supplements the explicit Retry action.
