@@ -20,7 +20,7 @@ Teachers, students, and groups share one administrator demo dataset. The teacher
 - `js/app.js`: UI state, validation, membership updates, and events.
 - `css/style.css`: shared design tokens, controls, and responsive layouts.
 
-This is a UI prototype, not real authentication or a Laravel API. Creating a teacher does not create a working login or send an invitation. Parent/Telegram features, record deletion, notifications, and reporting dashboards are outside scope.
+This is a UI prototype, not real authentication or a Laravel API. Creating a teacher does not create a working login. In the Laravel MVP, the administrator assigns the initial password and can reset it; an invitation flow is not required. The prototype password form is not implemented yet. Parent/Telegram features, record deletion, notifications, and reporting dashboards are outside scope.
 
 Model alignment: teacher name/email live in `User`, with `Teacher.user_id` linking the profile. Students use `name`, optional `parent_phone`, and nullable `user_id`; accounts are deferred. Groups have `id` and `name`; the UI's `studentIds` array represents the many-to-many membership, not an extra scalar model attribute. Teachers are assigned to sessions, not groups. Password hashes and generated IDs are server-managed and are not editable form fields. The prototype stores no passwords or hashes.
 
@@ -30,7 +30,7 @@ Create a teacher, create a student, then create a group and select the student. 
 
 ## MVP API endpoints (planned)
 
-Required for the administrator MVP; not implemented yet.
+Required operations for the administrator MVP; not implemented yet. Any protected API routes use JWT bearer authentication; server-rendered administrator pages may use the shared Laravel session authentication.
 
 | Method | Endpoint | Purpose |
 | --- | --- | --- |
@@ -38,9 +38,9 @@ Required for the administrator MVP; not implemented yet.
 | POST | `/api/admin/logout` | Log out. |
 | GET | `/api/admin/profile` | Get administrator profile. |
 | GET | `/api/admin/teachers` | List/search teachers. |
-| POST | `/api/admin/teachers` | Create a teacher and linked user account. |
+| POST | `/api/admin/teachers` | Create a teacher and linked user account with an administrator-assigned password. |
 | GET | `/api/admin/teachers/{id}` | Get a teacher for editing. |
-| PUT | `/api/admin/teachers/{id}` | Update teacher name and email through the linked user. |
+| PUT | `/api/admin/teachers/{id}` | Update teacher name/email and optionally reset their password through the linked user. |
 | GET | `/api/admin/students` | List/search students. |
 | POST | `/api/admin/students` | Create a student; database generates the ID. |
 | GET | `/api/admin/students/{id}` | Get a student and group memberships. |

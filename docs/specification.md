@@ -42,6 +42,6 @@ The repository contains documentation and two plain HTML/CSS/JavaScript prototyp
 
 ## Before coding
 
-Read the scope and model in full, then the relevant prototype and source. Use current scope/model decisions when a prototype's historical documentation differs. Endpoint tables describe required operations; the single-Laravel architecture does not require separate APIs for every admin screen. Check open decisions rather than assuming, for example, that the example grade 12/20 defines the grading scale.
+Read the scope and model in full, then the relevant prototype and source. Use current scope/model decisions when a prototype's historical documentation differs. Endpoint tables describe required operations; the single-Laravel architecture does not require separate APIs for every admin screen. Follow confirmed decisions: API authentication uses JWT with no expiration time and normal logout invalidation, grades are 0–10 inclusive, and administrators assign teacher passwords. Check the remaining open decisions before inventing business rules.
 
 When a requirement changes, edit its owning document and affected references instead of adding another competing specification. Keep the prototypes usable as references while implementing the real application.

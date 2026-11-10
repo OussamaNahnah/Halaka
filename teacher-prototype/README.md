@@ -20,7 +20,7 @@ Choose **جرّب دون تسجيل**, or enter any correctly formatted email an
 - Arabic is the default interface language, with right-to-left layout and Arabic date formatting. Internal enum values and saved surah identifiers remain unchanged for compatibility; responsive phone and desktop layouts, labeled forms, keyboard focus, and tab arrow-key navigation.
 - Sample groups and students are fixed. The dropdown selects the group; Next loads its members. A group is required. Students left unchanged remain absent. Students with saved attendance, assignments, or assessments cannot be removed from that session.
 - A sample catalog of seven surahs validates each passage's ayah range.
-- Grades are numeric with no fixed grading scale. Example: enter 12 for the illustrative 12/20 result; the UI does not impose a denominator.
+- Planned MVP grades are numeric 0–10 inclusive, with decimals allowed and no default zero for unassessed work. Prototype input validation still needs to be aligned with this confirmed scale.
 - Repeats link to the assessment that prompted them and keep separate grades. Only assignments from earlier sessions appear for assessment. One editable assessment per assignment per session is used in this prototype.
 - Deleting a session removes its demo records and assessments of its removed assignments; surviving repeat assignments lose links to deleted assessments. This is a prototype cleanup rule, not a proposed production data-retention policy.
 - No real authentication, Laravel backend, parent notifications, or student/group administration is implemented.
@@ -64,7 +64,7 @@ Sessions are saved immediately, initially `in_progress`, and marked `completed` 
 
 ## Required API endpoints (planned)
 
-These endpoints are not implemented yet.
+These endpoints are not implemented yet. Protected API endpoints will use JWT bearer authentication.
 
 | Method | Endpoint | Purpose |
 | --- | --- | --- |

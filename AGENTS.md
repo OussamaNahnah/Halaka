@@ -29,6 +29,7 @@ Read-only discovery needed to locate these files is allowed. At the start of imp
 - Follow the diagram's attendance rule: explicitly finishing a student marks them present; unfinished students become absent at session completion after confirmation. Missing grades are not zero.
 - Student IDs are generated automatically. `parent_phone` is an optional student contact field. No Parent entity, Telegram integration, or parent accounts in MVP.
 - Sessions can be edited but not deleted. Protect saved student work and original grades when handling repeat assignments.
+- Protected APIs use JWT without an expiration time (`exp` omitted); no refresh-token flow. Use the chosen implementation's normal server-side logout invalidation. Grades are numeric 0–10 inclusive, including decimals. Administrators assign initial teacher passwords and may reset them; production stores only secure hashes. Never store passwords in prototype storage or offline drafts.
 - Prototype login is simulated and never stores passwords. Production authentication must be real; never reuse simulated authorization as security.
 
 ## Verify and report

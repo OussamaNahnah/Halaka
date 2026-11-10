@@ -85,6 +85,7 @@ QuranAssessment "0..1" -- "0..*" QuranAssignment : original assessment for repea
 
 ## Business rules
 
+- Administrators create teacher accounts and assign or reset their passwords. Only `User.password_hash` is stored; passwords are never returned in user/profile responses. API authentication uses JWT as specified in the MVP architecture.
 - The current roles are Administrator, Teacher, and Student. One account can have more than one role.
 - Each session has one teacher and can include several students.
 - Save the session and all student work automatically on the teacher's device from creation onward, including when offline. Creating a session does not require uploading it immediately. Required group, roster, and earlier-assignment data must already be available locally for offline use.
@@ -105,7 +106,7 @@ QuranAssessment "0..1" -- "0..*" QuranAssignment : original assessment for repea
 - An assessment and its assignment must belong to the same student, through their respective `StudentSession` records. An assignment may remain unassessed or have several assessments over time.
 - After an assessment, the teacher can assign a repeat of the full passage or a smaller range within it. Store this as a new `QuranAssignment` linked to the original assessment, for the same student and surah. Each repeat has exactly one original assessment; an ordinary assignment has none. An assessment can lead to several repeat assignments.
 - Preserve the original assessment and grade when assigning a repeat. Assessing the repeat creates a separate assessment and grade linked to the new assignment.
-- Example: a student receives **12/20** for Al-Mulk, ayahs **1–10**. The teacher assigns ayahs **4–6** for the next session, linking the new assignment to that assessment. When ayahs 4–6 are assessed, their new grade is stored separately; the original 12/20 remains unchanged. This score is illustrative; the grading scale is still open.
+- Example: a student receives **6/10** for Al-Mulk, ayahs **1–10**. The teacher assigns ayahs **4–6** for the next session, linking the new assignment to that assessment. When ayahs 4–6 are assessed, their new grade is stored separately; the original 6/10 remains unchanged. The grading scale is 0–10 inclusive.
 - An administrator can view all teachers, students, groups, and sessions stored on the server, including attendance records, grades, and comments. Work stored only on a teacher's device is unavailable to other accounts until sent.
 
 ## Attribute notes
@@ -128,12 +129,11 @@ QuranAssessment "0..1" -- "0..*" QuranAssignment : original assessment for repea
 - `QuranAssignment.surah_name`, `from_ayah`, `to_ayah`, and `type` are required. Validate the selected surah and ensure `1 <= from_ayah <= to_ayah` within that surah's ayah count. `type` must be `new_memorization` or `revision`.
 - `QuranAssignment.repeat_of_assessment_id` is nullable and references `QuranAssessment.id`. For a repeat, validate that the student and surah match the original assessed assignment and that the new range is contained within its range (the full range is allowed).
 - `QuranAssessment.student_session_id` references the session attendance record where recitation was assessed; `quran_assignment_id` references the assignment being checked. Both references are required. Validate that both records belong to the same student.
-- `QuranAssessment.grade` is required; `comment` is optional. The passage and type are obtained through `quran_assignment_id`. The grading scale and valid grade range remain to be decided.
+- `QuranAssessment.grade` is required; `comment` is optional. The passage and type are obtained through `quran_assignment_id`. Validate a numeric grade in the inclusive range 0–10; decimals are allowed.
 
 ## Open decisions
 
 - Confirm whether every student needs an account. The diagram currently allows a student record without one.
-- Decide the grading scale and valid grade range for Quran assessments. The 12/20 example does not establish a fixed scale.
 - Confirm whether administrators can also correct attendance or grades entered by a teacher.
 - Confirm whether students can belong to several groups and whether every session must belong to a group. The initial design allows multiple memberships and optional session groups.
 - Decide whether creating a group session automatically creates its `StudentSession` roster from current group members.

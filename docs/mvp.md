@@ -9,6 +9,7 @@ Use **one Laravel application**, one repository, one database, and one deploymen
 - **Administration:** server-rendered Laravel pages for managing teachers, students, and groups. A separate REST API for every administration action is not required; prototype endpoint tables describe operations, not a mandatory architecture.
 - **Teacher interface:** mobile-first HTML, CSS, and JavaScript served by the same Laravel application. Cache the interface for offline use as described below.
 - **Teacher API:** a small same-application API for downloading classroom data, retrieving accepted sessions, and atomically uploading new or edited sessions with retry/duplicate protection. Local teaching work does not require an online request for each field.
+- **API authentication:** use JWT bearer authentication for protected API routes, with **no expiration time** (no `exp` claim). No scheduled token expiry or refresh-token flow is required for MVP. Validate token signature, authenticated identity, and permissions on the server. Use the selected JWT implementation's normal server-side logout invalidation mechanism; deleting the browser copy alone must not leave the same token usable after logout. JWT package and browser token storage remain implementation choices. Never store passwords in offline drafts.
 - **Authentication and authorization:** one shared authentication system with role-based access for teachers and administrators. Laravel owns validation, permissions, and database writes.
 - **Offline storage:** the browser stores drafts and queued submissions; Laravel receives them when the teacher sends after connectivity returns. Offline preparation and initial login require an online connection.
 
@@ -19,6 +20,7 @@ The administrator and teacher prototypes are UI references to integrate into thi
 - Mobile-first teacher web application in the browser; offline use is required for MVP, not a later enhancement. The administrator interface remains desktop-first and responsive; administrator offline support is not required.
 - After an initial online sign-in and preparation, cache the teacher interface, scripts, styles, font, and icons so it can reopen without internet. Serve the application over HTTPS and use a service worker for the offline application shell. No external font or CDN request may be required for offline operation.
 
+- Administrators assign the teacher's initial password when creating the linked user account and can reset it later. Production Laravel stores only a secure password hash, never a readable password; no invitation-email flow is required for MVP. Teachers may change their password through their profile.
 - Real teacher login and logout; authorize access to the teacher's own groups and sessions.
 - Basic administrator login and creation/editing of teachers, students (including an optional parent/guardian contact phone), groups, and memberships. A separate administrator UI prototype is available at [admin-prototype](../admin-prototype/README.md).
 - Create a session by choosing its date, time, and group; load group members automatically.
@@ -43,14 +45,14 @@ The administrator and teacher prototypes are UI references to integrate into thi
 
 `Parent` and its relationships are excluded from the current class diagram. They can be designed when parent features are introduced. The role model can remain, with teacher and basic administrator access in MVP.
 
-## Decisions required before implementation
+## Confirmed business decisions
 
-- Agree on a grading scale and valid range; 12/20 is currently only illustrative.
+- Grading is decided: each assessed passage receives a numeric grade from **0 to 10 inclusive**. Decimal grades are allowed by the model. Blank/unassessed passages do not automatically become zero.
 - Attendance rule is decided: students not explicitly finished are absent when the session is completed. Completion is an explicit teacher action, not inferred from the presence of a numeric grade; a first-session student may have no earlier assignment to assess.
 
 ## Offline scope and resource use
 
-The first sign-in and classroom download require internet. Cache only the teacher's needed groups, rosters, Quran catalog, and prior assignments. Saving attendance, assessments, and assignments must work while offline. Expired server authentication must not discard drafts; require online sign-in again before sending when needed. Show unavailable data or failed local saves clearly rather than claiming that preparation or saving succeeded.
+The first sign-in and classroom download require internet. Cache only the teacher's needed groups, rosters, Quran catalog, and prior assignments. Saving attendance, assessments, and assignments must work while offline. JWT has no automatic expiration. If authentication is invalidated by logout, preserve unsent drafts and require sign-in before sending them. Show unavailable data or failed local saves clearly rather than claiming that preparation or saving succeeded.
 
 Keep the offline cache versioned and avoid replacing it in a way that loses drafts. Browser data can be cleared or evicted, so local storage is not a permanent backup. Store text records only in MVP; no audio/video uploads, location tracking, or recurring network polling. Provide visible local save and upload states.
 
