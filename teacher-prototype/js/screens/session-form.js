@@ -1,4 +1,7 @@
 'use strict';
 
-// Screen: session-form. Use shared components and styles.
-function editor(){const s=data.sessions.find(s=>s.id===editing);shell(`<button class="back" data-action="list">→ حصصي</button><h1>${s?'تعديل الحصة':'إنشاء حصة'}</h1><p class="muted">حدد موعد الحصة والمجموعة المشاركة.</p><form id="session-form" class="card form"><div class="fields"><label>التاريخ<input name="date" type="date" required value="${s?.date||day(1)}"></label><label>الوقت<input name="time" type="time" required value="${s?.time||'09:00'}"></label></div><label>المجموعة (اختياري)<select name="group"><option value="">دون مجموعة</option>${groups.map(g=>`<option value="${g.id}" ${s?.group===g.id?'selected':''}>${g.name}</option>`).join('')}</select></label><p class="notice">عند إنشاء حصة، يُضاف طلاب المجموعة المختارة. دون مجموعة، يُضاف جميع الطلاب التجريبيين. تعديل الحصة يحافظ على قائمتها وسجل حضورها.</p><div class="actions"><button class="primary">حفظ الحصة</button><button type="button" data-action="list">إلغاء</button></div></form>`);}
+// Choose a group first; its members are loaded on the next screen.
+function editor(){
+ const s=data.sessions.find(s=>s.id===editing);
+ shell(`${screenHeader(s?'تعديل الحصة':'إنشاء حصة','list','الرجوع إلى قائمة الحصص')}<form id="session-form" class="card form"><div class="fields"><label>التاريخ<input name="date" type="date" required value="${s?.date||day(0)}"></label><label>الوقت<input name="time" type="time" required value="${s?.time||new Date().toTimeString().slice(0,5)}"></label></div><label>المجموعة<select name="group" required><option value="">اختر مجموعة</option>${groups.map(g=>`<option value="${g.id}" ${s?.group===g.id?'selected':''}>${escapeHTML(g.name)}</option>`).join('')}</select></label><button class="primary">${s?'حفظ':'إنشاء الحصة'}</button></form>`);
+}

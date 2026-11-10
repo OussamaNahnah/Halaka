@@ -133,3 +133,55 @@ html[data-theme="dark"] .session-menu[open] summary{background:#314a3b}
 .session-list-heading .muted{font-size:12px;line-height:1.5}
 .session-list-heading>.primary{display:inline-flex;align-items:center;justify-content:center;gap:6px;flex-shrink:0;min-height:44px;width:auto;padding:10px 14px;border-radius:12px;font-size:13px;line-height:1.4;box-shadow:0 2px 3px #193d3810}
 @media(max-width:350px){.session-list-heading{gap:10px}.session-list-heading h1{font-size:23px}.session-list-heading>.primary{font-size:12px;padding-inline:11px}}
+
+.roster-fieldset{border:0;padding:0;margin:20px 0}.roster-fieldset legend{font-size:16px;font-weight:700}.roster-choice{display:flex;align-items:center;gap:12px;margin:0;padding:12px 0;border-bottom:1px solid var(--border);font-size:15px}.roster-choice input{width:22px;height:22px;min-height:22px;margin:0;accent-color:var(--green)}.session-progress{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:24px}
+
+.group-options{display:grid;gap:10px;margin:18px 0}.group-option{display:grid;grid-template-columns:1fr auto;gap:7px;text-align:start;padding:16px}.group-option strong{font-size:15px}.group-option .muted{grid-column:1;font-size:12px}.group-option>span:last-child{grid-column:2;grid-row:1/3;align-self:center;font-size:25px}.group-option[aria-pressed="true"]{border-color:var(--green);box-shadow:0 0 0 1px var(--green)}[hidden]{display:none!important}
+
+.student-name button:disabled{cursor:default;opacity:.6}
+
+/* Focused student workflow, with memorization and revision clearly separated. */
+.evaluation-heading h1{font-size:25px;margin:10px 0 5px}.evaluation-heading .muted{font-size:12px}
+.evaluation-summary{font-size:12px;color:var(--muted);margin:12px 0 20px}
+.passage-section{margin:22px 0}.passage-section>h2{font-size:17px;font-weight:700;display:flex;gap:8px;align-items:center;margin:0 0 12px}
+.section-empty{font-size:13px;color:var(--muted);padding:12px 0;margin:0;border-bottom:1px solid var(--border)}
+.evaluation-card h3{font-size:16px;margin:0}.evaluation-card .badge{font-size:10px}.assessment-form{display:grid;grid-template-columns:78px minmax(0,1fr);gap:12px;margin-top:16px}.assessment-form label{margin:0;font-size:12px}.assessment-form button{grid-column:1/-1;font-size:13px}.repeat-action{width:100%;margin-top:10px;border-style:dashed;font-size:12px}
+.assignment-composer{padding:0 16px}.assignment-composer summary{cursor:pointer;padding:15px 0;font-weight:700;font-size:14px}.assignment-composer form{padding:10px 0 16px}.assignment-composer form>.primary{width:100%}
+.assignment-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 0;border-bottom:1px solid var(--border)}.assignment-row strong{font-size:14px}.assignment-row .muted{display:block;font-size:11px;margin-top:5px}.assignment-row button{border:0;background:transparent;font-size:12px;padding:8px}
+
+.student-list{background:white;border:1px solid var(--border);border-radius:14px;overflow:hidden}.student-list-item{display:flex;align-items:center;gap:12px;width:100%;border:0;border-radius:0;padding:14px;text-align:start;background:transparent}.student-list-item+.student-list-item{border-top:1px solid var(--border)}.student-list-info{display:flex;flex:1;flex-direction:column;gap:5px}.student-list-info strong{font-size:15px}.student-list-info>span{font-size:12px}.completed-label{color:var(--green)}.student-step{margin-top:26px}.student-step>h2{display:flex;align-items:center;gap:9px;font-size:20px;font-weight:700}.student-step>h2>span{display:grid;place-items:center;width:27px;height:27px;border-radius:50%;background:#e6eee3;color:#185b4c;font-size:14px}.student-finish{margin-top:26px;padding-top:18px;border-top:1px solid var(--border)}.student-finish>.primary{width:100%}.student-navigation{display:flex;justify-content:space-between;gap:12px;margin-top:12px}.student-navigation button{flex:1}.student-navigation button:disabled{opacity:.4;cursor:default}html[data-theme="dark"] .student-list{background:#20332b}
+
+.session-submit{margin-top:24px}.session-submit>button{width:100%;min-height:48px}.session-submit p{text-align:center;font-size:12px}
+
+/* Session context and back navigation share one compact header. */
+.session-detail-header{margin:0 0 24px}.session-title-row{display:flex;align-items:center;gap:8px}.session-title-row h1{flex:1;min-width:0;font-size:22px;line-height:1.5;margin:0;font-weight:700}.icon-back{display:grid;place-items:center;flex:0 0 44px;width:44px;height:44px;padding:10px;border:0;background:transparent}.icon-back svg{width:22px;height:22px}.session-title-row .session-edit{border:0;font-size:12px;padding:8px;flex-shrink:0}.session-date-line{font-size:12px;color:var(--muted);margin:8px 52px 0 0;line-height:1.6}.roster-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}.roster-heading h2{font-size:16px;font-weight:700;margin:0}.roster-heading .muted{font-size:12px}
+
+.screen-header{margin:0 0 20px}.screen-subtitle{font-size:12px;color:var(--muted);margin:5px 52px 0 0;line-height:1.6}
+
+/* Lightweight recitation worksheet instead of repeated assessment cards. */
+.student-step{margin-top:22px}.student-step>h2{justify-content:space-between;font-size:18px;margin-bottom:14px}.student-step>h2 small{font-size:11px;font-weight:400;color:var(--muted)}
+.student-step .passage-section{margin:14px 0 18px}.student-step .passage-section>h2{font-size:12px;color:var(--muted);margin:0 0 8px;font-weight:500}.student-step .roster{gap:0;background:white;border:1px solid var(--border);border-radius:13px;overflow:hidden}
+.assessment-item{padding:12px 14px}.assessment-item+.assessment-item{border-top:1px solid var(--border)}.assessment-entry{display:flex;align-items:center;justify-content:space-between;gap:14px}.assessment-passage{display:flex;flex-direction:column;gap:6px;min-width:0}.assessment-passage strong{font-size:16px}.assessment-passage>span{font-size:12px;color:var(--muted);line-height:1.5}.compact-grade{flex:0 0 68px;margin:0;font-size:11px;color:var(--muted);text-align:center}.compact-grade input{margin-top:5px;text-align:center;padding:8px;min-height:44px;font-size:17px}.assessment-comment{margin-top:8px}.assessment-comment summary{font-size:11px;color:var(--muted);cursor:pointer;padding-block:8px;min-height:32px}.assessment-comment input{font-size:13px}.assessment-actions{display:flex;justify-content:flex-end}.assessment-actions button{font-size:12px;border:0;padding:6px 12px;min-height:36px}.assessment-item .repeat-action{border:0;text-align:start;padding:8px 0;margin:0;min-height:40px;font-size:12px;background:transparent}.student-step+.student-step{border-top:1px solid var(--border);padding-top:20px;margin-top:24px}
+html[data-theme="dark"] .student-step .roster{background:#20332b}
+
+/* Two focused steps, one primary action per student screen. */
+.evaluation-switch{display:flex;gap:4px;padding:4px;background:#e7ede6;border-radius:13px;margin:8px 0 24px}.evaluation-switch button{flex:1;border:0;background:transparent;color:var(--muted);display:flex;align-items:center;justify-content:center;gap:8px;min-height:43px;font-size:14px}.evaluation-switch button>span{font-size:12px}.evaluation-switch [aria-current="step"]{background:white;color:#185b4c;box-shadow:0 1px 4px #193d3815}.workspace-caption{font-size:13px;color:var(--muted);margin:0 0 16px}.evaluation-workspace .passage-section{margin:16px 0 20px}.evaluation-workspace .passage-section>h2{font-size:13px;color:var(--muted);font-weight:500;margin-bottom:8px}.evaluation-workspace .roster{background:white;border:1px solid var(--border);border-radius:14px;gap:0;overflow:hidden}.evaluation-workspace .assessment-item{padding:16px}.evaluation-workspace .assessment-comment{margin-top:2px}.evaluation-workspace .assignment-composer{margin-top:16px}.evaluation-bottom{margin-top:26px;padding-top:16px;border-top:1px solid var(--border)}.evaluation-bottom>.primary{width:100%;min-height:48px;font-size:14px}.evaluation-bottom .student-navigation button{border:0;background:transparent;font-size:11px;padding:8px 4px}.evaluation-workspace .assignment-row{padding:12px}.evaluation-workspace .assignment-row:last-child{border:0}html[data-theme="dark"] .evaluation-switch{background:#20332b}html[data-theme="dark"] .evaluation-switch [aria-current="step"]{background:#385442;color:#d5efdf}html[data-theme="dark"] .evaluation-workspace .roster{background:#20332b}
+
+/* Inline branding replaces the separate masthead. */
+.compact-logo{display:inline-flex;align-items:baseline;flex-shrink:0;font-size:23px;font-weight:700;line-height:1.4;color:var(--green);white-space:nowrap}.compact-logo>span{color:#b89958}.session-title-row .compact-logo{font-size:21px;margin-inline-start:4px}.session-title-row h1{font-size:20px}.profile-title-row{display:flex;align-items:center;justify-content:space-between}.profile-title-row h1{font-size:26px}.session-list-heading{margin-bottom:20px}.create-session-bottom{position:sticky;bottom:-24px;padding:16px 0 12px;background:#f5f6f1;margin-top:16px;z-index:2}.create-session-bottom button{width:100%;min-height:48px}.roster-edit{margin-inline-start:auto;border:0;font-size:12px;padding:6px 8px}.roster-heading{gap:8px}.roster-heading .muted{white-space:nowrap}html[data-theme="dark"] .create-session-bottom{background:#17251f}
+
+.sessions-shell{display:flex;flex-direction:column}.sessions-shell .session-list{flex-shrink:0}.sessions-shell .create-session-bottom{margin-top:auto;padding-top:20px}.sessions-shell .reset-demo{order:1;margin:8px auto 0}.sessions-shell .create-session-bottom{order:2}
+/* A shared compact spacing rhythm for inline page headers. */
+.shell{padding-top:20px}
+.screen-header,.session-detail-header{margin:0 0 18px}
+.session-title-row{min-height:44px;gap:8px}
+.session-title-row h1{line-height:1.35}
+.session-date-line,.screen-subtitle{margin-block:2px 0;margin-inline:52px 0;line-height:1.5;font-size:12px}
+.roster-heading{margin:0 0 10px;min-height:32px}
+.roster-heading .roster-edit{min-height:32px;padding-block:4px}
+.roster-heading h2{line-height:1.4}
+.session-list-heading{margin:0 0 18px;padding:0;min-height:44px}
+.profile-title-row{min-height:44px;margin-bottom:18px}
+.profile-title-row h1{margin:0;line-height:1.35}
+.profile-summary{margin-top:0}
+.evaluation-switch{margin-top:0;margin-bottom:18px}

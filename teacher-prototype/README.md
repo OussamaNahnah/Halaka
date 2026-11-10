@@ -6,7 +6,7 @@ Choose **جرّب دون تسجيل**, or enter any correctly formatted email an
 
 ## Walk through
 
-1. Open a session from the list, or create/edit one with a date, time, and optional group. Deletion asks for confirmation.
+1. Choose **بدء حصة**, select a group from the dropdown, then press **التالي**. The session starts at the current time and opens the group roster. Every student defaults to absent; mark those who attend as present or late to enable evaluation.
 2. Mark attendance in the roster. Tap a student's name to open evaluation.
 3. In **Today's assessment**, grade each previously assigned passage separately and optionally add a comment. For a seeded example, open the session dated today, then Yusuf Ahmed.
 4. Save an assessment, then choose **Assign a repeat**. Select the full range or a smaller range. Its original grade remains unchanged.
@@ -15,7 +15,7 @@ Choose **جرّب دون تسجيل**, or enter any correctly formatted email an
 ## Prototype choices and limits
 
 - Arabic is the default interface language, with right-to-left layout and Arabic date formatting. Internal enum values and saved surah identifiers remain unchanged for compatibility; responsive phone and desktop layouts, labeled forms, keyboard focus, and tab arrow-key navigation.
-- Sample groups and students are fixed. New grouped sessions copy current demo group membership; sessions without a group include all demo students. Editing preserves the existing roster.
+- Sample groups and students are fixed. The dropdown selects the group; Next loads its members. A group is required. Students left unchanged remain absent. Students with saved attendance, assignments, or assessments cannot be removed from that session.
 - A sample catalog of seven surahs validates each passage's ayah range.
 - Grades are numeric with no fixed grading scale. Example: enter 12 for the illustrative 12/20 result; the UI does not impose a denominator.
 - Repeats link to the assessment that prompted them and keep separate grades. Only assignments from earlier sessions appear for assessment. One editable assessment per assignment per session is used in this prototype.
@@ -42,3 +42,11 @@ Bottom navigation provides Home (sessions) and Profile. Profile offers a persist
 - `js/app.js`: routing, delegated event handlers, and startup.
 
 Edit a screen in its matching file. Reuse the shared components and CSS classes to keep screens consistent. These are classic scripts sharing one global scope: retain the load order in `index.html` and avoid duplicate top-level names. No modules, bundler, or package installation is needed. Existing local storage keys are preserved.
+
+Sessions can be marked completed with unchanged students recorded as absent, or reopened for editing. No minimum of two present students is imposed: actual attendance may include only one present student. Completion does not publish records or notify parents in this prototype. Parent access and production status rules remain future work.
+
+Student evaluation separates memorization and revision in both tabs. Today's assessment shows pending earlier assignments and assessments recorded in the current session; work already assessed in an earlier session stays in that historical session. Repeat work is explicitly assigned as a new passage. Next assignments uses a compact “إضافة واجب” form for multiple independent passages.
+
+## Current simplified teaching flow
+
+Create a session by choosing date/time and a group. Its student list shows “لم يُقيّم بعد” until the teacher explicitly finishes that student. Open any student directly; the page shows today's assessments followed by next assignments, without tabs. “إنهاء الطالب” saves entered assessment grades, marks the student recorded, and returns to the list. Previous/next buttons navigate the roster without marking students complete. Save an open assignment or repeat form before finishing or navigating. Finishing marks the student present in this demo. This flow supersedes the earlier attendance-first and automatic-timestamp descriptions above; production model rules remain in the design documents.
