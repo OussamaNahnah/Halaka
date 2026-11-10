@@ -185,3 +185,24 @@ html[data-theme="dark"] .student-step .roster{background:#20332b}
 .profile-title-row h1{margin:0;line-height:1.35}
 .profile-summary{margin-top:0}
 .evaluation-switch{margin-top:0;margin-bottom:18px}
+
+/* One compact worksheet keeps today's results and next work together. */
+.unified-evaluation .worksheet-section{margin-top:20px}.worksheet-section>h2{display:flex;align-items:center;justify-content:space-between;font-size:16px;font-weight:700;margin:0 0 10px}.worksheet-section>h2 small{font-size:12px;color:var(--muted);font-weight:400}.unified-evaluation .assessment-item{padding:10px 12px}.unified-evaluation .assessment-passage strong{font-size:14px;line-height:1.5}.passage-type{font-weight:400;color:var(--muted);font-size:11px}.unified-evaluation .assessment-passage{gap:3px}.unified-evaluation .compact-grade{flex-basis:58px}.unified-evaluation .compact-grade input{font-size:16px}.unified-evaluation .assessment-comment{display:inline-block;margin:0}.unified-evaluation .repeat-action{display:block;width:auto;min-height:32px;font-size:11px;padding:5px 0}.unified-evaluation .assignment-composer{margin-top:10px}.unified-evaluation .assignment-composer summary{padding:12px 0;font-size:13px}.unified-evaluation .assignment-row strong{font-size:13px}.unified-evaluation .worksheet-section+.worksheet-section{border-top:1px solid var(--border);padding-top:18px}.unified-evaluation .section-empty{border:0;padding:8px 0;font-size:12px}
+/* Profile uses the same compact row language as the session list. */
+.profile-identity{display:flex;align-items:center;gap:12px;padding:18px 0 24px;border-bottom:1px solid var(--border)}
+.profile-avatar{display:grid;place-items:center;flex:0 0 54px;height:54px;border-radius:18px;background:#e3ede2;color:var(--green);font-size:25px;font-weight:700}
+.profile-identity>div:nth-child(2){flex:1;min-width:0}.profile-identity h2{font-size:19px;font-weight:700;margin:0 0 6px}.profile-identity .muted{font-size:12px}.profile-identity .badge{font-size:10px;padding:5px 8px}
+.settings-heading{font-size:12px;font-weight:500;color:var(--muted);margin:24px 0 10px}
+.polished-settings{padding:0 14px;box-shadow:none}
+.setting-icon{display:grid;place-items:center;width:34px;height:34px;flex-shrink:0;border-radius:10px;background:#edf2eb;color:var(--green)}.setting-icon svg,.profile-signout svg{width:20px;height:20px}.setting-copy{flex:1;font-size:14px;font-weight:500}
+.polished-settings .theme-row{gap:11px;min-height:68px}
+.polished-settings .theme-switch{appearance:none;position:relative;width:42px;height:26px;min-height:26px;border:0;border-radius:20px;background:#c8d2cb;flex-shrink:0;padding:0;direction:ltr;transition:background .15s}
+.theme-switch::after{content:'';position:absolute;width:20px;height:20px;top:3px;left:3px;background:white;border-radius:50%;box-shadow:0 1px 3px #0002;transition:transform .15s}.polished-settings .theme-switch:checked{background:#185b4c}.theme-switch:checked::after{transform:translateX(16px)}
+.polished-settings .password-settings{padding:0}.polished-settings summary{display:flex;align-items:center;gap:11px;min-height:68px;list-style:none}.polished-settings summary::-webkit-details-marker{display:none}.setting-chevron{font:24px Arial,sans-serif;color:var(--muted)}.password-settings[open] .setting-chevron{transform:rotate(-90deg)}
+.profile-password-form{padding:0 0 16px;margin:0!important}.profile-password-form label{font-size:12px}.profile-password-form>.primary{width:100%;margin-top:16px}.profile-password-form>#password-help{display:block;font-size:11px}.profile-demo-note{font-size:11px;color:var(--muted);margin:0 0 16px}
+.profile-signout{width:100%;display:flex;align-items:center;justify-content:center;gap:9px;margin-top:24px;min-height:48px;border:1px solid #ead6d0;background:transparent;font-size:14px}
+html[data-theme="dark"] :is(.profile-avatar,.setting-icon){background:#314a3b;color:#c6e8d8}html[data-theme="dark"] .profile-signout{background:transparent;border-color:#674c46}html[data-theme="dark"] .theme-switch{background:#52655a}html[data-theme="dark"] .theme-switch:checked{background:#78bda0}
+@media(prefers-reduced-motion:reduce){.theme-switch,.theme-switch::after{transition:none}}
+/* Assessment notes span the complete passage row. */
+.unified-evaluation .assessment-comment{display:block;width:100%;margin-top:4px}
+.unified-evaluation .assessment-comment input{display:block;width:100%;box-sizing:border-box}

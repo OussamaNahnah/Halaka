@@ -6,16 +6,16 @@ function assessmentCard(assignment) {
   const original = assignment.repeat && data.assessments.find(item => item.id === assignment.repeat);
   return `<article class="assessment-item">
     <form data-assess="${assignment.id}" class="compact-assessment">
-      <div class="assessment-entry"><div class="assessment-passage"><strong>${escapeHTML(surahNames[assignment.surah]||assignment.surah)}</strong><span>الآيات <bdi>${assignment.from}–${assignment.to}</bdi>${original ? ` · إعادة · العلامة السابقة ${escapeHTML(original.grade)}` : ''}</span></div><label class="compact-grade">العلامة<input name="grade" type="number" step="any" required value="${assessment?.grade ?? ''}" placeholder="—"></label></div>
+      <div class="assessment-entry"><div class="assessment-passage"><strong><span class="passage-type">${typeLabel(assignment.type)}</span> · ${escapeHTML(surahNames[assignment.surah]||assignment.surah)}</strong><span>الآيات <bdi>${assignment.from}–${assignment.to}</bdi>${original ? ` · إعادة · العلامة السابقة ${escapeHTML(original.grade)}` : ''}</span></div><label class="compact-grade">العلامة<input name="grade" type="number" step="any" required value="${assessment?.grade ?? ''}" placeholder="—"></label></div>
       <details class="assessment-comment" ${assessment?.comment?'open':''}><summary>تعليق اختياري</summary><input name="comment" aria-label="تعليق على ${escapeHTML(passage(assignment))}" value="${escapeHTML(assessment?.comment || '')}" placeholder="أضف ملاحظة"></details>
 
     </form>
-    ${assessment ? `<button class="repeat-action" data-action="repeat" data-id="${assessment.id}">+ تكليف بإعادة المقطع</button>` : ''}
+    <button class="repeat-action" data-action="repeat-assignment" data-id="${assignment.id}">طلب إعادة تسميع المقطع أو جزء منه</button>
   </article>`;
 }
 
 function assignmentCard(assignment) {
-  return `<article class="assignment-row"><div><strong>${escapeHTML(passage(assignment))}</strong>${assignment.repeat ? '<span class="muted">إعادة مرتبطة بتقييم</span>' : ''}</div><button class="danger" data-action="remove-assignment" data-id="${assignment.id}" aria-label="حذف واجب ${escapeHTML(passage(assignment))}">حذف</button></article>`;
+  return `<article class="assignment-row"><div><strong><span class="passage-type">${typeLabel(assignment.type)}</span> · ${escapeHTML(passage(assignment))}</strong>${assignment.repeat ? '<span class="muted">إعادة مرتبطة بتقييم</span>' : ''}</div><button class="danger" data-action="remove-assignment" data-id="${assignment.id}" aria-label="حذف واجب ${escapeHTML(passage(assignment))}">حذف</button></article>`;
 }
 
 function passageSections(assignments, card) {
@@ -38,21 +38,20 @@ function evaluation() {
   });
   const assessedCount = dueToday.filter(item => data.assessments.some(assessment => assessment.assignment === item.id && assessment.session === sessionId)).length;
   const position = currentSession.students.indexOf(studentId);
-  const isAssessment = tab !== 'next';
   shell(`${screenHeader(studentName(studentId),'details','الرجوع إلى طلاب الحصة',`الطالب ${position+1} من ${currentSession.students.length}`)}
-    <div class="evaluation-switch" aria-label="خطوات تسجيل الطالب"><button data-action="evaluation-step" data-step="today" ${isAssessment?'aria-current="step"':''}><span>1</span> التقييم</button><button data-action="evaluation-step" data-step="next" ${!isAssessment?'aria-current="step"':''}><span>2</span> الواجبات</button></div>
-    <div class="evaluation-workspace">
-    ${isAssessment ? `<p class="workspace-caption">تسميع الواجب السابق</p>${dueToday.length?passageSections(dueToday,assessmentCard):'<p class="empty">لا توجد مقاطع سابقة للتقييم.<br>يمكنك الانتقال لإضافة الواجبات.</p>'}` : `<p class="workspace-caption">ما الذي سيحضّره الطالب؟</p>${assignedToday.length?passageSections(assignedToday,assignmentCard):'<p class="section-empty">لم تُضف واجبات بعد.</p>'}${assignmentForm()}`}
+    <div class="evaluation-workspace unified-evaluation">
+      <section class="worksheet-section"><h2>تقييم اليوم</h2>${dueToday.length?`<div class="roster">${dueToday.map(assessmentCard).join('')}</div>`:'<p class="section-empty">لا توجد واجبات سابقة للتسميع.</p>'}</section>
+      <section class="worksheet-section"><h2>الواجبات التالية <small>${assignedToday.length}</small></h2>${assignedToday.length?`<div class="roster">${assignedToday.map(assignmentCard).join('')}</div>`:'<p class="section-empty">لا توجد واجبات مضافة.</p>'}${assignmentForm()}</section>
     </div>
-    <div class="evaluation-bottom"><button class="primary" data-action="${isAssessment?'continue-assignments':'finish-student'}">${isAssessment?'حفظ ومتابعة للواجبات ←':'إنهاء الطالب ✓'}</button><div class="student-navigation"><button data-action="previous-student" ${position===0?'disabled':''}>→ الطالب السابق</button><button data-action="next-student" ${position===currentSession.students.length-1?'disabled':''}>الطالب التالي ←</button></div></div>`);
+    <div class="evaluation-bottom"><button class="primary" data-action="finish-student">إنهاء الطالب ✓</button><div class="student-navigation"><button data-action="previous-student" ${position===0?'disabled':''}>→ السابق</button><button data-action="next-student" ${position===currentSession.students.length-1?'disabled':''}>التالي ←</button></div></div>`);
 }
 
 // Save entered assessment fields before finishing or navigating; never store passwords.
-function saveStudentWork(){
+function saveStudentWork(ignorePending=false){
  const forms=[...app.querySelectorAll('form[data-assess]')];
  const pending=app.querySelector('#assignment-form');
- if(pending && (pending.elements.from.value!=='1'||pending.elements.to.value!=='7'||pending.elements.surah.value!=='Al-Fatiha'||pending.elements.type.value!=='new_memorization')){toast('اضغط «إضافة» لحفظ الواجب أولًا.');return false;}
- if(app.querySelector('form[data-repeat]')){toast('احفظ واجب الإعادة أولًا.');return false;}
+ if(!ignorePending && pending && (pending.elements.from.value!=='1'||pending.elements.to.value!=='7'||pending.elements.surah.value!=='Al-Fatiha'||pending.elements.type.value!=='new_memorization')){toast('اضغط «إضافة» لحفظ الواجب أولًا.');return false;}
+ if(!ignorePending && app.querySelector('form[data-repeat]')){toast('احفظ واجب الإعادة أولًا.');return false;}
  for(const form of forms){if(form.elements.grade.value!==''&&!form.reportValidity())return false;}
  for(const form of forms){
   if(form.elements.grade.value===''){if(form.elements.comment.value.trim()){toast('أدخل علامة المقطع لحفظ التعليق.');return false;}continue;}
