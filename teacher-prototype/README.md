@@ -1,0 +1,44 @@
+# Quran teacher prototype
+
+Open `index.html` directly in a browser. No server, installation, or build step is required. The Tajawal Arabic font loads from Google Fonts when online; offline, the interface uses a local fallback font. All other assets are local.
+
+Choose **جرّب دون تسجيل**, or enter any correctly formatted email and any nonempty demo password. Login is simulated: credentials are neither stored nor transmitted. Sign-out clears the login screen state; demo teaching records remain in browser local storage. Use **إعادة ضبط البيانات التجريبية** on the session list to start over. If storage is blocked, changes remain in memory until the page closes.
+
+## Walk through
+
+1. Open a session from the list, or create/edit one with a date, time, and optional group. Deletion asks for confirmation.
+2. Mark attendance in the roster. Tap a student's name to open evaluation.
+3. In **Today's assessment**, grade each previously assigned passage separately and optionally add a comment. For a seeded example, open the session dated today, then Yusuf Ahmed.
+4. Save an assessment, then choose **Assign a repeat**. Select the full range or a smaller range. Its original grade remains unchanged.
+5. In **Next assignments**, add multiple passages with a surah, ayah range, and memorization/revision type. Each is saved immediately. Create a later session with the same student to assess these passages.
+
+## Prototype choices and limits
+
+- Arabic is the default interface language, with right-to-left layout and Arabic date formatting. Internal enum values and saved surah identifiers remain unchanged for compatibility; responsive phone and desktop layouts, labeled forms, keyboard focus, and tab arrow-key navigation.
+- Sample groups and students are fixed. New grouped sessions copy current demo group membership; sessions without a group include all demo students. Editing preserves the existing roster.
+- A sample catalog of seven surahs validates each passage's ayah range.
+- Grades are numeric with no fixed grading scale. Example: enter 12 for the illustrative 12/20 result; the UI does not impose a denominator.
+- Repeats link to the assessment that prompted them and keep separate grades. Only assignments from earlier sessions appear for assessment. One editable assessment per assignment per session is used in this prototype.
+- Deleting a session removes its demo records and assessments of its removed assignments; surviving repeat assignments lose links to deleted assessments. This is a prototype cleanup rule, not a proposed production data-retention policy.
+- No real authentication, Laravel backend, parent notifications, or student/group administration is implemented.
+
+Only this folder is used by the prototype. The authoritative model is documented in [the class diagram](../docs/class-diagram.md); see also the [project study](../docs/project-study.md).
+
+The prototype is displayed in a phone-sized canvas (390 × 844px on desktop, reduced to fit the available viewport), including on desktop. On smaller devices it fills the available screen width; desktop shows a rounded phone frame. Screens and cards remain in a single column.
+
+Bottom navigation provides Home (sessions) and Profile. Profile offers a persistent dark-mode preference, a simulated password-change form, and sign-out. Passwords are never stored or sent; changing a password only shows a demo confirmation.
+
+## Source structure
+
+- `index.html`: entry point; loads CSS and ordered classic JavaScript files.
+- `css/theme.css`: shared design tokens (colors, typography).
+- `css/components.css`: base styles and shared controls.
+- `css/screens.css`: phone layouts, screen-specific styles, and dark-mode variants.
+- `js/data.js`: sample students, groups, Quran catalog, and local storage.
+- `js/state.js`: current screen and selection state.
+- `js/helpers.js`: escaping and display formatting.
+- `js/components.js`: shared app shell, bottom navigation, theme handling, toast, and assignment form.
+- `js/screens/`: login, session list, session form, roster, evaluation, and profile screens.
+- `js/app.js`: routing, delegated event handlers, and startup.
+
+Edit a screen in its matching file. Reuse the shared components and CSS classes to keep screens consistent. These are classic scripts sharing one global scope: retain the load order in `index.html` and avoid duplicate top-level names. No modules, bundler, or package installation is needed. Existing local storage keys are preserved.

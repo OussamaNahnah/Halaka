@@ -1,0 +1,135 @@
+/* Phone viewport, screen layouts, navigation, and theme variants. */
+/* Keep the prototype in a phone-sized canvas on every screen. */
+html{min-height:100%;background:#dce4df}
+body{width:100%;max-width:430px;min-height:100dvh;margin-inline:auto;background:#f5f6f1;box-shadow:0 0 50px #193d3820;overflow-wrap:anywhere}
+#app{min-width:0}
+.topbar{padding:16px;gap:8px;flex-wrap:wrap}
+.topbar .actions{gap:6px;align-items:center}
+.topbar .badge{font-size:11px}
+.topbar button{font-size:12px;padding:8px 10px}
+.brand{font-size:24px}
+.shell{width:100%;padding:24px 16px 40px}
+h1{font-size:30px}
+h2{font-size:23px}
+.grid{grid-template-columns:minmax(0,1fr)}
+.card{min-width:0;padding:16px}
+.heading{align-items:flex-start;margin:16px 0 22px}
+.heading>.primary{width:100%}
+.stats{gap:8px}
+.stat{min-width:0;padding:14px 9px}
+.stat strong{font-size:25px}
+.stat span{font-size:11px}
+.login{min-height:100dvh;display:flex;flex-direction:column;justify-content:center;align-items:stretch;padding:24px 16px;gap:20px}
+.login-intro{padding:0}
+.login-intro h1{font-size:36px}
+.login .card{max-width:none}
+.arabic{font-size:30px;margin:20px 0}
+.roster .card{padding:16px}
+.student-name{min-width:0;flex:1 1 190px}
+.student-name button{white-space:normal}
+.attendance{max-width:100%}
+.fields{grid-template-columns:repeat(2,minmax(0,1fr))}
+input,select,textarea{min-width:0;max-width:100%}
+.tabs{gap:6px}
+.tabs button{min-width:0;padding:10px 8px;font-size:13px;white-space:normal}
+.actions{max-width:100%}
+button{white-space:normal;max-width:100%}
+#toast{width:calc(100% - 32px);max-width:398px;text-align:center}
+@media(min-width:480px){body{margin-block:24px;min-height:calc(100dvh - 48px);border:7px solid #243e36;border-radius:34px;overflow:clip}.topbar{border-radius:25px 25px 0 0}.login{min-height:calc(100dvh - 62px)}}
+@media(max-width:350px){.fields{grid-template-columns:minmax(0,1fr)}.topbar .actions{width:100%;justify-content:space-between}.stat{padding:12px 6px}}
+
+/* Consistent Arabic typography, including controls and numeric summaries. */
+html[lang="ar"],html[lang="ar"] body,html[lang="ar"] h1,html[lang="ar"] h2,html[lang="ar"] .brand,html[lang="ar"] .brand small,html[lang="ar"] .stat strong,html[lang="ar"] .arabic{font-family:"Tajawal",Tahoma,Arial,sans-serif}
+html[lang="ar"] button,html[lang="ar"] input,html[lang="ar"] select,html[lang="ar"] textarea{font-family:inherit}
+html[lang="ar"] button,html[lang="ar"] label,html[lang="ar"] .eyebrow,html[lang="ar"] .brand{font-weight:700}
+
+.login-minimal{gap:0;padding:24px;justify-content:center}
+.login-minimal .card{padding:28px 22px}
+.login-minimal .brand{margin-bottom:24px}
+.login-minimal h1{font-size:25px;margin:0 0 24px}
+.login-minimal .demo-button{width:100%;margin-top:12px}
+.login-minimal .login-hint{text-align:center;font-size:11px;margin:18px 0 0}
+/* Fixed phone viewport on desktop; use the real viewport on mobile. */
+html{height:100%}
+body{height:100dvh;min-height:0;overflow:hidden}
+#app{height:100%;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-width:thin}
+.login,.login-minimal{min-height:100%;height:auto}
+@media(min-width:480px){
+  body{width:390px;max-width:calc(100vw - 32px);height:min(844px,calc(100dvh - 40px));min-height:0;margin:20px auto;border-radius:34px}
+  .login,.login-minimal{min-height:100%}
+}
+
+/* Compact session rows: one large open target, separate secondary actions. */
+.session-list-heading{align-items:center;margin:0 0 20px;gap:10px}
+.session-list-heading h1{margin:0 0 4px;font-size:27px}
+.session-list-heading>.primary{width:auto;font-size:14px;padding:10px 14px}
+.session-list{list-style:none;margin:0;padding:0;background:white;border:1px solid var(--border);border-radius:16px;overflow:hidden}
+.session-item+.session-item{border-top:1px solid var(--border)}
+.session-open{display:flex;align-items:center;gap:12px;width:100%;border:0;border-radius:0;padding:16px 14px;text-align:start;font-weight:400;background:transparent}
+.session-open:focus-visible{outline-offset:-4px}
+.session-date{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:0 0 48px;min-height:58px;background:#edf3e9;border-radius:11px;color:var(--green);font-size:11px;line-height:1.5}
+.session-day{font-size:23px;font-weight:700}
+.session-info{display:flex;flex-direction:column;gap:7px;min-width:0;flex:1}
+.session-info strong{font-size:16px;line-height:1.4}
+.session-info .muted{font-size:11px;font-weight:400;line-height:1.6}
+.session-chevron{font:26px Arial,sans-serif;color:#81988e}
+.session-tools{display:flex;justify-content:flex-end;gap:4px;padding:0 12px 6px}
+.session-tools button{border:0;background:transparent;padding:8px 12px;font-size:12px;min-height:44px}
+.session-tools button:hover{background:#edf3e9}
+.session-tools .danger:hover{background:#fff0ee}
+.reset-demo{display:block;margin:22px auto 0;font-size:11px;color:var(--muted)}
+@media(max-width:350px){.session-list-heading>.primary{padding:10px;font-size:12px}.session-open{gap:8px;padding:14px 10px}.session-info .muted{font-size:10px}}
+
+/* Persistent app navigation stays inside the phone viewport. */
+#app{position:relative;isolation:isolate}
+#app:has(.bottom-nav){display:flex;flex-direction:column;overflow:hidden}
+#app:has(.bottom-nav) .topbar{flex-shrink:0}
+#app:has(.bottom-nav) .shell{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding-bottom:24px}
+.bottom-nav{display:flex;flex-shrink:0;background:white;border-top:1px solid var(--border);padding:6px 16px max(6px,env(safe-area-inset-bottom));gap:12px}
+.bottom-nav button{display:flex;flex:1;flex-direction:column;align-items:center;gap:4px;border:0;background:transparent;color:var(--muted);font-size:12px;padding:7px}
+.bottom-nav svg{width:22px;height:22px}
+.bottom-nav [aria-current="page"]{background:#edf3e9;color:var(--green)}
+.profile-summary{display:flex;gap:14px;align-items:center;margin:20px 0 16px}.profile-summary h2{font-size:20px;margin:0 0 5px}
+.profile-settings{padding-block:0}.theme-row{display:flex;align-items:center;justify-content:space-between;min-height:66px;margin:0;font-size:15px;gap:12px}
+.theme-row input{width:42px;height:24px;min-height:24px;margin:0;accent-color:var(--green);cursor:pointer}
+.password-settings{border-top:1px solid var(--border);padding-block:18px}.password-settings summary{cursor:pointer;min-height:28px;font-weight:700;font-size:15px}.password-settings form{margin-top:18px}.logout-button{width:100%;margin-top:20px}
+html[data-theme="dark"]{color-scheme:dark;background:#101917;--green:#9edbc3;--muted:#a3b8af;--border:#364b43;color:#e4eee8}
+html[data-theme="dark"] body{background:#17251f;color:#e4eee8}
+html[data-theme="dark"] :is(.topbar,.card,.session-list,.bottom-nav){background:#20332b}
+html[data-theme="dark"] button{background:#293f35;color:#c6e8d8;border-color:var(--border)}
+html[data-theme="dark"] :is(.primary,.tabs [aria-selected="true"]){background:#98d3b8;color:#132e21;border-color:#98d3b8}
+html[data-theme="dark"] :is(.badge,.stat,.avatar,.session-date,.bottom-nav [aria-current="page"]){background:#314a3b;color:#c6e8d8}
+html[data-theme="dark"] :is(input,select,textarea){background:#17251f;color:#e4eee8;border-color:#4c6558}
+html[data-theme="dark"] .notice{background:#443e28;color:#eee4c6}
+html[data-theme="dark"] .danger{color:#ffb6ac}
+html[data-theme="dark"] :is(.session-open,.session-tools button,.bottom-nav button,.quiet){background:transparent}
+html[data-theme="dark"] :is(.session-open:hover,.session-tools button:hover){background:#2d4438}
+html[data-theme="dark"] .bottom-nav [aria-current="page"]{background:#314a3b}
+html[data-theme="dark"] .eyebrow{color:#d7bc85}
+
+/* One compact row per session; secondary actions open on demand. */
+.session-list{overflow:visible}
+.session-item{display:flex;align-items:center;position:relative;min-width:0}
+.session-open{flex:1;min-width:0;padding:13px 12px;gap:10px}
+.session-date{flex-basis:40px;min-height:48px;font-size:10px;border-radius:9px}
+.session-day{font-size:21px}
+.session-info{gap:4px}
+.session-info strong{font-size:15px}
+.session-chevron{display:none}
+.session-menu{flex:0 0 40px;margin-inline-end:6px;position:relative}
+.session-menu summary{display:grid;place-items:center;list-style:none;cursor:pointer;min-height:44px;font:bold 24px Arial,sans-serif;color:var(--muted);border-radius:10px}
+.session-menu summary::-webkit-details-marker{display:none}
+.session-menu summary:focus-visible{outline:3px solid #be902d;outline-offset:-3px}
+.session-menu[open]{z-index:3}
+.session-menu[open] summary{background:#edf3e9;color:var(--green)}
+.session-menu .session-tools{position:absolute;inset-inline-end:0;top:46px;display:flex;flex-direction:column;gap:0;min-width:115px;background:white;border:1px solid var(--border);border-radius:12px;padding:4px;box-shadow:0 8px 24px #193d3826;z-index:4}
+.session-menu .session-tools button{text-align:start;width:100%}
+html[data-theme="dark"] .session-menu .session-tools{background:#20332b}
+html[data-theme="dark"] .session-menu[open] summary{background:#314a3b}
+/* Session header: quiet hierarchy and one clear primary action. */
+.session-list-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:0 0 18px;padding-block:2px 4px}
+.session-list-heading>div{min-width:0;display:flex;flex-direction:column;gap:5px}
+.session-list-heading h1{font-size:26px;font-weight:700;line-height:1.3;margin:0}
+.session-list-heading .muted{font-size:12px;line-height:1.5}
+.session-list-heading>.primary{display:inline-flex;align-items:center;justify-content:center;gap:6px;flex-shrink:0;min-height:44px;width:auto;padding:10px 14px;border-radius:12px;font-size:13px;line-height:1.4;box-shadow:0 2px 3px #193d3810}
+@media(max-width:350px){.session-list-heading{gap:10px}.session-list-heading h1{font-size:23px}.session-list-heading>.primary{font-size:12px;padding-inline:11px}}
