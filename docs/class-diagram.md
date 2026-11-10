@@ -1,5 +1,8 @@
 # School Management Class Diagram
 
+Implementation priority is defined in the [MVP scope](mvp.md). Parent features and Telegram are deferred and excluded from this class diagram.
+
+
 This file is the authoritative design reference for the Laravel school management study project. Keep the Mermaid diagram and the rules below in sync.
 
 ## UML class diagram
@@ -26,14 +29,7 @@ class Student {
   int id
   int user_id
   string name
-  string student_number
-}
-class Parent {
-  int id
-  int user_id
-  string name
-  string email
-  string phone
+  string parent_phone
 }
 class Group {
   int id
@@ -54,6 +50,7 @@ class StudentSession {
   int student_id
   int session_id
   string attendance_status
+  timestamp evaluated_at
 }
 class QuranAssignment {
   int id
@@ -75,8 +72,6 @@ class QuranAssessment {
 User "0..*" -- "1..*" Role : has
 User "1" -- "0..1" Teacher : teacher profile
 User "0..1" -- "0..1" Student : student profile
-User "0..1" -- "0..1" Parent : parent profile
-Parent "0..*" -- "0..*" Student : parent of
 Student "0..*" -- "0..*" Group : member of
 Group "0..1" -- "0..*" Session : schedules
 Teacher "1" -- "0..*" Session : teaches
@@ -90,7 +85,7 @@ QuranAssessment "0..1" -- "0..*" QuranAssignment : original assessment for repea
 
 ## Business rules
 
-- The four roles are Administrator, Teacher, Student, and Parent. One account can have more than one role.
+- The current roles are Administrator, Teacher, and Student. One account can have more than one role.
 - Each session has one teacher and can include several students.
 - Save the session and all student work automatically on the teacher's device from creation onward, including when offline. Creating a session does not require uploading it immediately. Required group, roster, and earlier-assignment data must already be available locally for offline use.
 - Session completion and synchronization are separate: `status` starts as `in_progress` and becomes `completed` when the teacher selects **Finish and send session**. A completed session may still be waiting for upload.
@@ -98,11 +93,12 @@ QuranAssessment "0..1" -- "0..*" QuranAssignment : original assessment for repea
 - If there is no connection or an upload fails, keep the complete submission on the device as `pending_upload`. Show **Waiting to send** with **Retry**; never report success or clear local work before acknowledgement. Recover interrupted uploads as pending when the application restarts.
 - Send the session, attendance, assignments, and assessments together. The server must authorize and validate the submission and save it atomically. Repeated sends of the same submission must not create duplicate sessions or child records; use the stable client UUID and a submission revision/idempotency key.
 - Editing a saved session is allowed; deleting it is not. Edits to an already uploaded session are saved locally, move its sync state to `local_only`, and require another explicit finish-and-send action. Preserve the server's last accepted revision until the new revision is acknowledged. Never mark newer local edits as synced merely because an earlier upload succeeds.
-- An unevaluated student is not automatically absent; attendance and evaluation completion are separate facts.
+- While a session is in progress, students not yet finished display as **Not evaluated yet**. The teacher's **Finish student** action sets `evaluated_at` and marks the student `present`. On **Finish and send session**, roster students whose `evaluated_at` is null are marked `absent`; list their names for confirmation before submission.
+- Evaluation completion is explicit, not inferred from whether a grade exists. A student without earlier assignments can still be finished after reviewing their work or assigning next passages. Missing grades do not default to zero.
 - A group has a name and can contain several students. The initial design allows a student to belong to several groups, with each student/group membership stored only once.
 - A session can optionally belong to one group, allowing sessions without a group as well. The teacher is assigned to each session.
 - `StudentSession` records remain the attendance roster for each session. Changing group membership must not change past session records.
-- The teacher records attendance for each student in their session. Each student has at most one `StudentSession` record per session.
+- Attendance is recorded through student/session completion as described above; finishing a previously absent student during correction marks them present in the next submitted revision. Each student has at most one `StudentSession` record per session.
 - For each student in a Quran session, the teacher has two sections: **Today's assessment**, which records a grade and optional comment for each previously assigned passage recited today, and **Next session's assignments**, which records passages to prepare.
 - Both sections support `new_memorization` and `revision`. Each assigned passage has its own `QuranAssignment`; each assessment of that passage has its own `QuranAssessment` and grade. The assessment gets its passage and type from the assignment, rather than duplicating them.
 - Each assignment covers one surah, selected by name, and an inclusive ayah range, such as Al-Mulk, ayahs 1–10. Assignments are linked to the student's session in which they were given; assessments are linked to the student's session in which the recitation was assessed. The assignment must have been given earlier than its assessment.
@@ -110,10 +106,7 @@ QuranAssessment "0..1" -- "0..*" QuranAssignment : original assessment for repea
 - After an assessment, the teacher can assign a repeat of the full passage or a smaller range within it. Store this as a new `QuranAssignment` linked to the original assessment, for the same student and surah. Each repeat has exactly one original assessment; an ordinary assignment has none. An assessment can lead to several repeat assignments.
 - Preserve the original assessment and grade when assigning a repeat. Assessing the repeat creates a separate assessment and grade linked to the new assignment.
 - Example: a student receives **12/20** for Al-Mulk, ayahs **1–10**. The teacher assigns ayahs **4–6** for the next session, linking the new assignment to that assessment. When ayahs 4–6 are assessed, their new grade is stored separately; the original 12/20 remains unchanged. This score is illustrative; the grading scale is still open.
-- A parent record can exist without a user account, so the school can store contact details now and connect the parent to the system later.
-- A parent with a linked account can view only their children's completed session revisions successfully accepted by the server. Local drafts, pending uploads, and unsent edits are not visible; the last accepted revision remains visible while edits await submission. A student can be linked to more than one parent, and a parent can be linked to several students.
-- Parents should be able to receive notifications in a later phase. The delivery channels and triggering events remain to be decided; no delivery mechanism is implemented yet.
-- An administrator can view all teachers, students, parents, groups, and sessions stored on the server, including attendance records, grades, and comments. Work stored only on a teacher's device is unavailable to other accounts until sent.
+- An administrator can view all teachers, students, groups, and sessions stored on the server, including attendance records, grades, and comments. Work stored only on a teacher's device is unavailable to other accounts until sent.
 
 ## Attribute notes
 
@@ -125,9 +118,11 @@ QuranAssessment "0..1" -- "0..*" QuranAssignment : original assessment for repea
 - Persist local records and queued submissions durably (for example, in IndexedDB). A local save failure must be shown separately from an upload failure; only show **Saved on device** after successful local persistence. Browser storage can be cleared or lost and is not a server backup.
 - `Session.timestamp` stores the session date and time in one field.
 - A teacher uses the name and email from their account. A student record has a name so it can exist without an account.
-- `Student.user_id` and `Parent.user_id` are optional. Each linked user account has at most one parent profile.
-- `Parent.name` is required; `Parent.email` and `Parent.phone` are optional contact details, independent of login credentials.
-- Linking a parent to an account later must preserve their contact details and student relationships.
+- `Student.id` is generated by the database; administrators do not enter or edit it. There is no separate manually entered student number.
+- `Student.user_id` is optional.
+- `Student.parent_phone` is an optional contact number for the student's parent or guardian. Store it as a string including the country code when available. It does not create a parent account or Telegram subscription. The same number may be used for siblings; it is not unique.
+- The MVP stores one parent/guardian contact number per student; multiple contacts and parent profiles are deferred.
+- `StudentSession.evaluated_at` is nullable and records when the teacher explicitly finishes the student. Before session completion, a null value means not evaluated yet; on completion it determines absence. `attendance_status` starts as `not_marked` and becomes `present` or `absent` under these rules.
 - `StudentSession.id` is the primary key. Keep a unique constraint on `(student_id, session_id)` so each student has only one attendance record per session. Grades and comments belong to `QuranAssessment`, not `StudentSession`.
 - `QuranAssignment.assigned_in_student_session_id` references `StudentSession.id` and identifies when and to whom the assignment was given.
 - `QuranAssignment.surah_name`, `from_ayah`, `to_ayah`, and `type` are required. Validate the selected surah and ensure `1 <= from_ayah <= to_ayah` within that surah's ayah count. `type` must be `new_memorization` or `revision`.
@@ -140,7 +135,6 @@ QuranAssessment "0..1" -- "0..*" QuranAssignment : original assessment for repea
 - Confirm whether every student needs an account. The diagram currently allows a student record without one.
 - Decide the grading scale and valid grade range for Quran assessments. The 12/20 example does not establish a fixed scale.
 - Confirm whether administrators can also correct attendance or grades entered by a teacher.
-- Decide which events notify parents (for example, attendance or grade updates), which channels to use (in-app, email, or SMS), and whether parents without accounts can receive notifications.
 - Confirm whether students can belong to several groups and whether every session must belong to a group. The initial design allows multiple memberships and optional session groups.
 - Decide whether creating a group session automatically creates its `StudentSession` roster from current group members.
 - Decide how to resolve concurrent edits from multiple devices, including submission version checks and conflict recovery. Until resolved, never silently overwrite a newer server revision.

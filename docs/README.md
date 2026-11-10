@@ -1,5 +1,8 @@
 # Halaka — Documentation
 
+Implementation priority is defined in the [MVP scope](mvp.md). Parent accounts, parent features, and Telegram are deferred; this document also includes the long-term design.
+
+
 Detailed project status, planned features, repository structure, and contribution guidance. For the general introduction, see the [main README](../README.md).
 
 A school management study project for Quran classes, planned with **Laravel (PHP)**. Halaka helps teachers organize sessions, track attendance, and follow each student's memorization and revision.
@@ -36,6 +39,10 @@ teacher-prototype/
   js/                   # Data, components, and screens
 README.md               # Repository overview
 ```
+
+## Administrator prototype
+
+The [administrator prototype](../admin-prototype/README.md) provides simulated login and basic teacher, student, and group management.
 
 ## Documentation
 

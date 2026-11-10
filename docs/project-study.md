@@ -1,5 +1,8 @@
 # Halaka — Project Study
 
+Implementation priority is defined in the [MVP scope](mvp.md). Parent accounts, parent features, and Telegram are deferred; this document also includes the long-term design.
+
+
 Halaka is a school management study project for Quran classes, planned with **Laravel (PHP)**. The repository currently contains system design documents and a working teacher UI prototype. The Laravel application has not been scaffolded.
 
 ## Roles and access

@@ -1,5 +1,8 @@
 # Quran teacher prototype
 
+See the [MVP scope](../docs/mvp.md) for what to implement first. Parent features and Telegram are deferred.
+
+
 Open `index.html` directly in a browser. No server, installation, or build step is required. The Tajawal Arabic font loads from Google Fonts when online; offline, the interface uses a local fallback font. All other assets are local.
 
 Choose **جرّب دون تسجيل**, or enter any correctly formatted email and any nonempty demo password. Login is simulated: credentials are neither stored nor transmitted. Sign-out clears the login screen state; demo teaching records remain in browser local storage. Use **إعادة ضبط البيانات التجريبية** on the session list to start over. If storage is blocked, changes remain in memory until the page closes.
@@ -57,4 +60,25 @@ Created sessions are retained: the session list offers opening and editing, with
 
 ## Saving and session status
 
-Sessions are saved immediately, initially `in_progress`, and marked `completed` when finished. These states are separate from persistence. The shared indicator reports local saving success or failure; there is no server synchronization yet. Student records start with attendance `not_marked`, not absent. The planned Laravel implementation will persist immediately on the server and restrict parent visibility to completed sessions, as documented in the class diagram.
+Sessions are saved immediately, initially `in_progress`, and marked `completed` when finished. These states are separate from persistence. The shared indicator reports local saving success or failure; there is no server synchronization yet. Student records start with attendance `not_marked`, not absent. The planned Laravel implementation will save work on the device first and upload the completed session when the teacher chooses Finish and send. Parents will see only completed revisions accepted by the server, as documented in the class diagram.
+
+## Required API endpoints (planned)
+
+These endpoints are not implemented yet.
+
+| Method | Endpoint | Purpose |
+| --- | --- | --- |
+| POST | `/api/login` | Teacher login. |
+| POST | `/api/logout` | Log out. |
+| GET | `/api/profile` | Get the teacher profile. |
+| PUT | `/api/profile/password` | Change password. |
+| GET | `/api/groups` | List the teacher's groups. |
+| GET | `/api/groups/{groupId}/students` | Get group members. |
+| GET | `/api/students/{studentId}/assignments` | Get previous assignments to assess. |
+| GET | `/api/quran/surahs` | Get surahs and ayah counts. |
+| GET | `/api/sessions` | List uploaded sessions. |
+| GET | `/api/sessions/{sessionId}` | Get a session and its student records. |
+| POST | `/api/sessions` | Create/upload a completed local session, including attendance, assessments, and assignments. |
+| PUT | `/api/sessions/{sessionId}` | Upload edits to a session and its student records. |
+
+Sessions are saved on the device before upload. Retry must not create duplicates. There is no session deletion endpoint. Dark mode is a local preference.
