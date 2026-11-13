@@ -3,6 +3,8 @@
 Implementation priority is defined in the [MVP scope](mvp.md). Parent features and Telegram are deferred and excluded from this class diagram.
 
 
+Delivery 1 implements the database and Filament; teacher API, JWT, and offline/synchronization behavior below belong to a later delivery. See the [Laravel plan](laravel-plan.md). Local sync metadata is not a required server table field.
+
 This file is the authoritative design reference for the Laravel school management study project. Keep the Mermaid diagram and the rules below in sync.
 
 ## UML class diagram
@@ -85,7 +87,7 @@ QuranAssessment "0..1" -- "0..*" QuranAssignment : original assessment for repea
 
 ## Business rules
 
-- Administrators create teacher accounts and assign or reset their passwords. Only `User.password_hash` is stored; passwords are never returned in user/profile responses. API authentication uses JWT as specified in the MVP architecture.
+- Administrators create teacher accounts and assign or reset their passwords. Only `User.password_hash` is stored; passwords are never returned in user/profile responses. Filament uses Laravel session authentication; JWT is deferred to the later teacher API delivery.
 - The current roles are Administrator, Teacher, and Student. One account can have more than one role.
 - Each session has one teacher and can include several students.
 - Save the session and all student work automatically on the teacher's device from creation onward, including when offline. Creating a session does not require uploading it immediately. Required group, roster, and earlier-assignment data must already be available locally for offline use.
@@ -108,6 +110,8 @@ QuranAssessment "0..1" -- "0..*" QuranAssignment : original assessment for repea
 - Preserve the original assessment and grade when assigning a repeat. Assessing the repeat creates a separate assessment and grade linked to the new assignment.
 - Example: a student receives **6/10** for Al-Mulk, ayahs **1–10**. The teacher assigns ayahs **4–6** for the next session, linking the new assignment to that assessment. When ayahs 4–6 are assessed, their new grade is stored separately; the original 6/10 remains unchanged. The grading scale is 0–10 inclusive.
 - An administrator can view all teachers, students, groups, and sessions stored on the server, including attendance records, grades, and comments. Work stored only on a teacher's device is unavailable to other accounts until sent.
+
+- Administrators may correct an existing `QuranAssessment.grade` and `comment`, preserving its student, assignment, and assessing-session links. Update the existing assessment row directly; no separate assessment-change model/table or audit history is required. A correction advances the relevant server revision; stale teacher submissions must not silently overwrite it. Assignment completion labels remain derived from linked assessments, not the grade value.
 
 ## Attribute notes
 
@@ -134,7 +138,7 @@ QuranAssessment "0..1" -- "0..*" QuranAssignment : original assessment for repea
 ## Open decisions
 
 - Confirm whether every student needs an account. The diagram currently allows a student record without one.
-- Confirm whether administrators can also correct attendance or grades entered by a teacher.
+- Confirm whether administrators can correct attendance entered by a teacher; grade/comment correction is already allowed.
 - Confirm whether students can belong to several groups and whether every session must belong to a group. The initial design allows multiple memberships and optional session groups.
 - Decide whether creating a group session automatically creates its `StudentSession` roster from current group members.
 - Decide how to resolve concurrent edits from multiple devices, including submission version checks and conflict recovery. Until resolved, never silently overwrite a newer server revision.

@@ -1,6 +1,6 @@
 # Quran teacher prototype
 
-See the [MVP scope](../docs/mvp.md) for what to implement first. Parent features and Telegram are deferred.
+See the [MVP scope](../docs/mvp.md) for what to implement first and the [teacher application plan](../docs/teacher-plan.md) for Delivery 2. Parent features and Telegram are deferred.
 
 
 Open `index.html` directly in a browser. No server, installation, or build step is required. The Tajawal Arabic font loads from Google Fonts when online; offline, the interface uses a local fallback font. All other assets are local.
@@ -25,7 +25,7 @@ Choose **جرّب دون تسجيل**, or enter any correctly formatted email an
 - Deleting a session removes its demo records and assessments of its removed assignments; surviving repeat assignments lose links to deleted assessments. This is a prototype cleanup rule, not a proposed production data-retention policy.
 - No real authentication, Laravel backend, parent notifications, or student/group administration is implemented.
 
-Only this folder is used by the prototype. The authoritative model is documented in [the class diagram](../docs/class-diagram.md); see also the [project study](../docs/project-study.md).
+Only this folder is used by the prototype. The authoritative model is documented in [the class diagram](../docs/class-diagram.md); see also the [project study](../docs/mvp.md).
 
 The prototype is displayed in a phone-sized canvas (390 × 844px on desktop, reduced to fit the available viewport), including on desktop. On smaller devices it fills the available screen width; desktop shows a rounded phone frame. Screens and cards remain in a single column.
 
@@ -62,23 +62,6 @@ Created sessions are retained: the session list offers opening and editing, with
 
 Sessions are saved immediately, initially `in_progress`, and marked `completed` when finished. These states are separate from persistence. The shared indicator reports local saving success or failure; there is no server synchronization yet. Student records start with attendance `not_marked`, not absent. The planned Laravel implementation will save work on the device first and upload the completed session when the teacher chooses Finish and send. Parents will see only completed revisions accepted by the server, as documented in the class diagram.
 
-## Required API endpoints (planned)
+## Future Laravel integration
 
-These endpoints are not implemented yet. Protected API endpoints will use JWT bearer authentication.
-
-| Method | Endpoint | Purpose |
-| --- | --- | --- |
-| POST | `/api/login` | Teacher login. |
-| POST | `/api/logout` | Log out. |
-| GET | `/api/profile` | Get the teacher profile. |
-| PUT | `/api/profile/password` | Change password. |
-| GET | `/api/groups` | List the teacher's groups. |
-| GET | `/api/groups/{groupId}/students` | Get group members. |
-| GET | `/api/students/{studentId}/assignments` | Get previous assignments to assess. |
-| GET | `/api/quran/surahs` | Get surahs and ayah counts. |
-| GET | `/api/sessions` | List uploaded sessions. |
-| GET | `/api/sessions/{sessionId}` | Get a session and its student records. |
-| POST | `/api/sessions` | Create/upload a completed local session, including attendance, assessments, and assignments. |
-| PUT | `/api/sessions/{sessionId}` | Upload edits to a session and its student records. |
-
-Sessions are saved on the device before upload. Retry must not create duplicates. There is no session deletion endpoint. Dark mode is a local preference.
+See the [teacher application plan](../docs/teacher-plan.md) for the proposed endpoints, offline queue, backend components, and verification criteria. These are later-delivery requirements, not features implemented by this standalone prototype.
