@@ -1,6 +1,6 @@
 # Halaka — MVP
 
-One Laravel application for Quran-school administration and teacher session recording. **Current status: Laravel/Sail in `backend/` with local MySQL database `halaka`, plus a teacher HTML prototype. The school domain schema and Filament remain unimplemented.**
+One Laravel application for Quran-school administration and teacher session recording. **Current status: Laravel/Sail in `backend/` with local MySQL database `halaka`, plus a teacher HTML prototype. Domain models, relationships, and migration files are created; Filament remains unimplemented.**
 
 ## Delivery 1 — build first, after plan review
 
@@ -34,7 +34,7 @@ Offline teacher operation remains required before the **full MVP** is complete. 
 
 The [class diagram](class-diagram.md) is the authoritative domain model.
 
-- Grades are numeric 0–10 inclusive; decimals allowed. Store secure password hashes only.
+- Grades accept any numeric value, with or without decimals; no fixed range or decimal-place limit. Store secure password hashes only.
 - Generated student IDs; optional shared sibling `parent_phone`; no Parent entity.
 - Each student/session pair is unique. Group membership changes preserve historical rosters and results.
 - Each assignment covers one surah/range/type. Each assessment references an assignment for the same student; it does not copy the passage/type.

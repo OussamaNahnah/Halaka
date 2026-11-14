@@ -22,7 +22,7 @@ Arabic RTL, Tajawal, Halaka branding, compact headers with inline logo, accessib
 ### Today's assessments
 
 - Show earlier assignments awaiting assessment and assessments already recorded in this session. Work assessed in an earlier session belongs in history; assigning an explicit repeat creates fresh work.
-- Each row shows memorization/revision type, surah, inclusive ayah range, and a separate grade field. Grades are 0–10 inclusive with decimals allowed; empty is unassessed, not zero.
+- Each row shows memorization/revision type, surah, inclusive ayah range, and a separate grade field. Grades accept any numeric value, with or without decimals; empty is unassessed, not zero.
 - An optional comment expands to the full row width. Preserve unsaved input when adding a passage, navigating, or refreshing the view.
 - Repetition: save the assessment first, then select the same surah's full range or a smaller contained range. Create a new assignment linked to that assessment. Keep the original grade and all later repeat grades independent.
 - No assignment from the current session can be assessed in that same session. Validate same-student ownership for every link.
@@ -132,7 +132,7 @@ Adapt to the actual Laravel asset pipeline. Do not introduce a separate frontend
 ## 7. Tests and acceptance
 
 - Real login/logout, protected API access, ownership checks, nested-record access rejection, and no credential/hash exposure.
-- Group selection, roster snapshots, saved edits, multiple passages/types, grades 0/10/decimals, invalid grades/ranges, optional comments, and independent repeats.
+- Group selection, roster snapshots, saved edits, multiple passages/types, integer and decimal grades, invalid grades/ranges, optional comments, and independent repeats.
 - Finish student and previous/next behavior; final absent-student confirmation; no silent form loss or zero grades for unassessed passages.
 - Durable local writes, storage failure, user isolation, tab-close recovery, and offline cold reopening with fonts/assets available.
 - Atomic server submission, validation rollback, dependency ordering, dropped response and retry without duplicates, and local/server identifier mapping.

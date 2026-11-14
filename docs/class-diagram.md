@@ -67,7 +67,7 @@ class QuranAssessment {
   int id
   int student_session_id
   int quran_assignment_id
-  decimal grade
+  float grade
   string comment
 }
 
@@ -108,7 +108,7 @@ QuranAssessment "0..1" -- "0..*" QuranAssignment : original assessment for repea
 - An assessment and its assignment must belong to the same student, through their respective `StudentSession` records. An assignment may remain unassessed or have several assessments over time.
 - After an assessment, the teacher can assign a repeat of the full passage or a smaller range within it. Store this as a new `QuranAssignment` linked to the original assessment, for the same student and surah. Each repeat has exactly one original assessment; an ordinary assignment has none. An assessment can lead to several repeat assignments.
 - Preserve the original assessment and grade when assigning a repeat. Assessing the repeat creates a separate assessment and grade linked to the new assignment.
-- Example: a student receives **6/10** for Al-Mulk, ayahs **1–10**. The teacher assigns ayahs **4–6** for the next session, linking the new assignment to that assessment. When ayahs 4–6 are assessed, their new grade is stored separately; the original 6/10 remains unchanged. The grading scale is 0–10 inclusive.
+- Example: a student receives **6/10** for Al-Mulk, ayahs **1–10**. The teacher assigns ayahs **4–6** for the next session, linking the new assignment to that assessment. When ayahs 4–6 are assessed, their new grade is stored separately; the original 6/10 remains unchanged. Grades have no fixed numeric range.
 - An administrator can view all teachers, students, groups, and sessions stored on the server, including attendance records, grades, and comments. Work stored only on a teacher's device is unavailable to other accounts until sent.
 
 - Administrators may correct an existing `QuranAssessment.grade` and `comment`, preserving its student, assignment, and assessing-session links. Update the existing assessment row directly; no separate assessment-change model/table or audit history is required. A correction advances the relevant server revision; stale teacher submissions must not silently overwrite it. Assignment completion labels remain derived from linked assessments, not the grade value.
@@ -133,7 +133,7 @@ QuranAssessment "0..1" -- "0..*" QuranAssignment : original assessment for repea
 - `QuranAssignment.surah_name`, `from_ayah`, `to_ayah`, and `type` are required. Validate the selected surah and ensure `1 <= from_ayah <= to_ayah` within that surah's ayah count. `type` must be `new_memorization` or `revision`.
 - `QuranAssignment.repeat_of_assessment_id` is nullable and references `QuranAssessment.id`. For a repeat, validate that the student and surah match the original assessed assignment and that the new range is contained within its range (the full range is allowed).
 - `QuranAssessment.student_session_id` references the session attendance record where recitation was assessed; `quran_assignment_id` references the assignment being checked. Both references are required. Validate that both records belong to the same student.
-- `QuranAssessment.grade` is required; `comment` is optional. The passage and type are obtained through `quran_assignment_id`. Validate a numeric grade in the inclusive range 0–10; decimals are allowed.
+- `QuranAssessment.grade` is required; `comment` is optional. The passage and type are obtained through `quran_assignment_id`. Require a numeric grade, with or without decimals; no fixed range or decimal-place limit. Store as a floating-point number (finite machine precision).
 
 ## Open decisions
 

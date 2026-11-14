@@ -1,6 +1,6 @@
 # Laravel + Filament implementation plan
 
-**Status: the user installed Laravel and Sail in `backend/`. Local development uses MySQL with database `halaka`. The school domain schema and Filament implementation remains proposed for review.**
+**Status: the user installed Laravel and Sail in `backend/`. Local development uses MySQL with database `halaka`. Domain models, relationships, and migration files are created. Seeders, application validation, and Filament remain planned.**
 
 This is the technical delivery plan. [MVP](mvp.md) owns scope; [class diagram](class-diagram.md) owns domain fields and constraints.
 
@@ -65,14 +65,14 @@ All domain tables have generated primary keys and normal creation/update timesta
 | 6 | `teaching_sessions` | Domain Session: `id`, `teacher_id`, nullable `group_id`, `timestamp`, `status` default `in_progress`. Use this table/model name to avoid collision with Laravel's framework `sessions` table. |
 | 7 | `student_sessions` | `id`, `student_id`, `session_id` referencing `teaching_sessions`, `attendance_status` default `not_marked`, nullable `evaluated_at`; unique `(student_id, session_id)`. |
 | 8 | `quran_assignments` | `id`, `assigned_in_student_session_id`, `surah_name`, positive `from_ayah`/`to_ayah`, `type`, nullable `repeat_of_assessment_id`. Create the last column without its foreign key until assessments exist. |
-| 9 | `quran_assessments` | `id`, `student_session_id`, `quran_assignment_id`, decimal `grade`, nullable text `comment`. Grade range 0–10; validate passage ownership and chronology in application logic. |
+| 9 | `quran_assessments` | `id`, `student_session_id`, `quran_assignment_id`, double `grade`, nullable text `comment`. No fixed grade range; validate passage ownership and chronology in application logic. |
 | 10 | Add repeat foreign key | Link `quran_assignments.repeat_of_assessment_id` to `quran_assessments.id`; reverse/drop this constraint before dropping these tables during rollback. |
 
 Framework `sessions`, cache, or other infrastructure migrations are included only if required by the chosen Laravel configuration. They are not school-domain entities.
 
 **Later synchronization:** the diagram's `client_uuid`, server revision/idempotency support, and device sync metadata are future teacher-delivery requirements. Do not turn `sync_status` or `last_synced_at` into server columns by blindly copying the conceptual diagram. Do not add JWT/queue/submission tables in this first delivery. When the API phase begins, add the required schema and integrate existing assessment corrections with stale-write protection before accepting uploads.
 
-Decimal precision must support grades from 0 to 10 inclusive. Rounding/maximum decimal places is an implementation detail to confirm; never default a missing assessment grade to zero.
+Grades use `double` to accept numbers without a fixed decimal-place limit, as requested by the user. Do not impose a numeric range or default a missing grade to zero. Floating-point values have finite machine precision.
 
 ## 4. Eloquent relationships
 
@@ -126,7 +126,7 @@ Derive student assignment/history views through these existing relationships; do
 
 - Open one shared edit modal from either a student assignment block or session assessment row.
 - Only `grade` and `comment` are editable. Student, passage, type, and session are read-only context.
-- `CorrectAssessment` authorizes the administrator, validates 0–10, locks the current assessment in a transaction, updates its grade/comment directly, and keeps its relationships unchanged. No change-log model, table, or audit-history records are required.
+- `CorrectAssessment` authorizes the administrator, validates a numeric grade, locks the current assessment in a transaction, updates its grade/comment directly, and keeps its relationships unchanged. No change-log model, table, or audit-history records are required.
 - Both entry points update the same record. Do not delete assessments, change foreign keys, or edit assignment passages through this action.
 - No separate top-level assignment/assessment resource navigation is needed. Use nested Filament relationship views/actions.
 
@@ -154,14 +154,15 @@ Do not generate empty controllers or resources merely to fill a project tree. Ke
 - Test atomic teacher creation, unique email, password hashing/reset, blank edit preserving the hash, and no hash leakage.
 - Test nullable parent phone, shared sibling phone, generated IDs, both membership edit entry points, and duplicate-pivot prevention.
 - Test session/student links, multiple assessments, To do/Assessed derivation, independent repeats, and no deletion actions.
-- Test correction authorization, range validation, transactional direct updates, and consistent display across entry points.
+- Test correction authorization, numeric validation, transactional direct updates, and consistent display across entry points.
 - Verify schema rollback across the assignment/assessment circular reference and database constraints.
 
 ## 8. Execution checklist (after review)
 
 - [ ] Inspect environment; select Laravel/Filament/database versions.
 - [x] Scaffold Laravel in `backend/`, preserving the teacher prototype/docs.
-- [ ] Add ordered migrations, models/relations, roles and safe development seed data.
+- [x] Create ordered migrations and models/relationships, including both pivot tables.
+- [ ] Add role and safe development seed data.
 - [ ] Configure `/admin` session authentication and administrator policies.
 - [ ] Implement teacher/student/group resources.
 - [ ] Implement session/student history and grade/comment correction.
