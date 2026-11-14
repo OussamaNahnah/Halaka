@@ -19,6 +19,10 @@ Halaka/
 └── README.md
 ```
 
+## Home page
+
+The public `/` route displays an Arabic RTL landing page in `backend/resources/views/welcome.blade.php`, with Halaka branding, a short overview, and links to the administrator panel. It uses standalone CSS and SVG without a frontend build.
+
 ## Administrator panel
 
 Start Sail from `backend/` with `./vendor/bin/sail up -d`, then open http://localhost/admin.
