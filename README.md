@@ -6,11 +6,22 @@ The planned application will use **Laravel (PHP)** and support teachers, adminis
 
 ## Status
 
-Currently in the design and prototyping phase. An Arabic teacher prototype is available; Laravel development has not started yet.
+Laravel and Sail are installed in `backend/`, using the local MySQL database `halaka`. The Arabic teacher prototype is preserved. The school domain schema and Filament panel are not implemented.
+
+## Project structure
+
+```text
+Halaka/
+├── backend/             Laravel application and Sail
+├── docs/                Specifications and implementation plans
+├── teacher-prototype/   Standalone teacher UI reference
+├── AGENTS.md            Project instructions
+└── README.md
+```
 
 ## MVP
 
-The first milestone is the Laravel database and Filament administration panel, with no APIs. The full MVP later adds teacher sessions, Quran assessments and assignments, local saving, and server submission. The implementation plan is awaiting review. Parent features and Telegram are deferred. See the [MVP scope](docs/mvp.md).
+The first milestone is the Laravel database and Filament administration panel, with no APIs. The full MVP later adds teacher sessions, Quran assessments and assignments, local saving, and server submission. The user installed the Laravel scaffold; the remaining implementation plan awaits review. Parent features and Telegram are deferred. See the [MVP scope](docs/mvp.md).
 
 ## Documentation
 
@@ -22,7 +33,7 @@ Read these in order; each owns a distinct part of the specification:
 
 4. [Teacher application plan](docs/teacher-plan.md) — Delivery 2 screens, offline storage, API/submission design, and tests.
 
-Review the implementation plan before starting Laravel scaffolding, package installation, or migrations. The first milestone has no APIs.
+Project creation is approved. Review the implementation plan before implementing the school database or Filament panel. The first milestone has no APIs.
 
 ## Teacher prototype
 

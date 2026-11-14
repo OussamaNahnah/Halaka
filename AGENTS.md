@@ -41,6 +41,8 @@ Read-only discovery needed to locate these files is allowed. At the start of imp
 
 ## Implementation boundaries
 
+- Laravel lives in `backend/`. Run Composer, Artisan, Sail, and frontend build commands from that directory. Keep `docs/`, `teacher-prototype/`, and repository instructions at the repository root.
+
 - One Laravel application, repository, database, authentication system, and deployment. Delivery 1 is the data model and Filament panel only, with Laravel session authentication. No APIs, JWT implementation, teacher offline pipeline, or custom admin controllers in this milestone. The teacher API/offline application remains a later MVP delivery inside the same Laravel project.
 - Use Filament resources, forms, tables, and relationship management for administration rather than building a custom administrator UI. Keep its standard layout and components, with Arabic RTL and Halaka branding. Do not build a separate admin API unless an actual integration requires it.
 - Arabic RTL, Tajawal typography, forest green/gold Halaka branding, minimal forms and lists. Teacher interface is mobile-first. Administrator interface is wide on desktop and responsive on mobile, without a fixed phone frame.

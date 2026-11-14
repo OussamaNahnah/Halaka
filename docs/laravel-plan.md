@@ -1,6 +1,6 @@
 # Laravel + Filament implementation plan
 
-**Status: proposed for user review. Do not scaffold, install packages, or run migrations until the user approves implementation.**
+**Status: the user installed Laravel and Sail in `backend/`. Local development uses MySQL with database `halaka`. The school domain schema and Filament implementation remains proposed for review.**
 
 This is the technical delivery plan. [MVP](mvp.md) owns scope; [class diagram](class-diagram.md) owns domain fields and constraints.
 
@@ -10,7 +10,7 @@ Build one Laravel application, one database, and an administrator panel at `/adm
 
 **No API in this delivery:** no `routes/api.php` endpoints, JWT package, JSON API Resources, teacher synchronization controllers, or offline upload pipeline. Filament uses Laravel session authentication. The existing HTML teacher prototype remains unchanged. Offline teacher operation is still a later MVP requirement, not removed from the product.
 
-Check the actual PHP/Composer/database environment and select compatible supported Laravel/Filament versions before installation. Do not pin versions from memory or install unrelated frameworks. Keep the teacher prototype and documents intact while adding Laravel at the repository root.
+Check the actual PHP/Composer/database environment and select compatible supported Laravel/Filament versions before installation. Do not pin versions from memory or install unrelated frameworks. Keep the teacher prototype and documents intact while keeping the Laravel application in `backend/`. All application paths below are relative to `backend/`.
 
 ## 2. Proposed application structure
 
@@ -160,7 +160,7 @@ Do not generate empty controllers or resources merely to fill a project tree. Ke
 ## 8. Execution checklist (after review)
 
 - [ ] Inspect environment; select Laravel/Filament/database versions.
-- [ ] Scaffold Laravel in this repository, preserving the teacher prototype/docs.
+- [x] Scaffold Laravel in `backend/`, preserving the teacher prototype/docs.
 - [ ] Add ordered migrations, models/relations, roles and safe development seed data.
 - [ ] Configure `/admin` session authentication and administrator policies.
 - [ ] Implement teacher/student/group resources.
@@ -171,7 +171,7 @@ Do not generate empty controllers or resources merely to fill a project tree. Ke
 ## 9. Review points
 
 1. Approve the first delivery as **database + Filament only**, with no teacher API/offline implementation yet.
-2. Choose the database based on the deployment environment before writing database-specific constraints.
+2. Local development uses MySQL (`halaka`). Confirm the deployment database before writing database-specific constraints.
 3. Final teacher/group access mapping remains unresolved; do not invent a Group teacher foreign key. This does not block administrator data management.
 4. Administrator attendance correction remains unauthorized; assignment passage editing and assessment creation/deletion are not included.
 5. The later teacher phase still needs API/JWT, durable offline storage, revision/idempotency behavior, and conflict handling. The earlier decision was JWT with no `exp`; it does not apply to Filament's session login.

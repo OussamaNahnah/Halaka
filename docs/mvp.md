@@ -1,6 +1,6 @@
 # Halaka — MVP
 
-One Laravel application for Quran-school administration and teacher session recording. **Current status: specifications and a teacher HTML prototype only; no Laravel implementation.**
+One Laravel application for Quran-school administration and teacher session recording. **Current status: Laravel/Sail in `backend/` with local MySQL database `halaka`, plus a teacher HTML prototype. The school domain schema and Filament remain unimplemented.**
 
 ## Delivery 1 — build first, after plan review
 
