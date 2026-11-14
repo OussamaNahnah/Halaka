@@ -7,29 +7,27 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['assigned_in_student_session_id', 'surah_name', 'from_ayah', 'to_ayah', 'type', 'repeat_of_assessment_id'])]
+#[Fillable(['student_id', 'surah_name', 'from_ayah', 'to_ayah', 'type', 'is_passed'])]
 class QuranAssignment extends Model
 {
+    protected $attributes = ['is_passed' => false];
+
     protected function casts(): array
     {
         return [
             'from_ayah' => 'integer',
             'to_ayah' => 'integer',
+            'is_passed' => 'boolean',
         ];
     }
 
-    public function assignedInStudentSession(): BelongsTo
+    public function student(): BelongsTo
     {
-        return $this->belongsTo(StudentSession::class, 'assigned_in_student_session_id');
+        return $this->belongsTo(Student::class);
     }
 
     public function assessments(): HasMany
     {
         return $this->hasMany(QuranAssessment::class);
-    }
-
-    public function repeatOfAssessment(): BelongsTo
-    {
-        return $this->belongsTo(QuranAssessment::class, 'repeat_of_assessment_id');
     }
 }

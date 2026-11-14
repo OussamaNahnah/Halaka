@@ -1,6 +1,6 @@
 # Laravel + Filament implementation plan
 
-**Status: the user installed Laravel and Sail in `backend/`. Local development uses MySQL with database `halaka`. Domain models, relationships, and migration files are created. Seeders, application validation, and Filament remain planned.**
+**Status: the user installed Laravel and Sail in `backend/`. Local development uses MySQL with database `halaka`. The domain models and migrations were rebuilt for student-owned assignments with boolean `is_passed`, including both pivot tables. Seeders, application validation, and Filament remain planned.**
 
 This is the technical delivery plan. [MVP](mvp.md) owns scope; [class diagram](class-diagram.md) owns domain fields and constraints.
 
@@ -64,9 +64,8 @@ All domain tables have generated primary keys and normal creation/update timesta
 | 5 | `groups`, `group_student` | Group ID/name; membership pivot with unique `(group_id, student_id)`. No teacher foreign key on Group. |
 | 6 | `teaching_sessions` | Domain Session: `id`, `teacher_id`, nullable `group_id`, `timestamp`, `status` default `in_progress`. Use this table/model name to avoid collision with Laravel's framework `sessions` table. |
 | 7 | `student_sessions` | `id`, `student_id`, `session_id` referencing `teaching_sessions`, `attendance_status` default `not_marked`, nullable `evaluated_at`; unique `(student_id, session_id)`. |
-| 8 | `quran_assignments` | `id`, `assigned_in_student_session_id`, `surah_name`, positive `from_ayah`/`to_ayah`, `type`, nullable `repeat_of_assessment_id`. Create the last column without its foreign key until assessments exist. |
-| 9 | `quran_assessments` | `id`, `student_session_id`, `quran_assignment_id`, double `grade`, nullable text `comment`. No fixed grade range; validate passage ownership and chronology in application logic. |
-| 10 | Add repeat foreign key | Link `quran_assignments.repeat_of_assessment_id` to `quran_assessments.id`; reverse/drop this constraint before dropping these tables during rollback. |
+| 8 | `quran_assignments` | `id`, required `student_id`, `surah_name`, positive `from_ayah`/`to_ayah`, `type`, boolean `is_passed` default `false`. No assigning-session or repeat/source foreign key. |
+| 9 | `quran_assessments` | `id`, `student_session_id`, `quran_assignment_id`, double `grade`, nullable text `comment`. No fixed grade range; validate that the assignment and assessing roster record belong to the same student in application logic. |
 
 Framework `sessions`, cache, or other infrastructure migrations are included only if required by the chosen Laravel configuration. They are not school-domain entities.
 
@@ -81,14 +80,14 @@ Grades use `double` to accept numbers without a fixed decimal-place limit, as re
 | User | `roles()` belongsToMany Role; `teacher()` hasOne Teacher; `student()` hasOne Student. |
 | Role | `users()` belongsToMany User. |
 | Teacher | `user()` belongsTo User; `sessions()` hasMany TeachingSession. |
-| Student | Optional `user()` belongsTo User; `groups()` belongsToMany Group; `studentSessions()` hasMany StudentSession. |
+| Student | Optional `user()` belongsTo User; `groups()` belongsToMany Group; `studentSessions()` hasMany StudentSession; `assignments()` hasMany QuranAssignment. |
 | Group | `students()` belongsToMany Student; `sessions()` hasMany TeachingSession. |
 | TeachingSession | `teacher()` belongsTo Teacher; optional `group()` belongsTo Group; `studentSessions()` hasMany StudentSession. |
-| StudentSession | `student()` belongsTo Student; `session()` belongsTo TeachingSession using `session_id`; `assignments()` hasMany QuranAssignment using `assigned_in_student_session_id`; `assessments()` hasMany QuranAssessment. |
-| QuranAssignment | `assignedInStudentSession()` belongsTo StudentSession; `assessments()` hasMany QuranAssessment; optional `repeatOfAssessment()` belongsTo QuranAssessment. |
-| QuranAssessment | `studentSession()` belongsTo StudentSession; `assignment()` belongsTo QuranAssignment; `repeatAssignments()` hasMany QuranAssignment using `repeat_of_assessment_id`. |
+| StudentSession | `student()` belongsTo Student; `session()` belongsTo TeachingSession using `session_id`; `assessments()` hasMany QuranAssessment. |
+| QuranAssignment | `student()` belongsTo Student; `assessments()` hasMany QuranAssessment. |
+| QuranAssessment | `studentSession()` belongsTo StudentSession; `assignment()` belongsTo QuranAssignment. |
 
-Derive student assignment/history views through these existing relationships; do not add duplicate student IDs or copied surah/type fields to assessments. An assignment's student and an assessment's student must match.
+Derive student assignment/history views through these existing relationships; keep the student foreign key on assignments, and do not copy student IDs or surah/type fields to assessments. An assignment's student and an assessment's student must match.
 
 ## 5. Filament resources and associations
 
@@ -105,9 +104,9 @@ Derive student assignment/history views through these existing relationships; do
 - Create/edit name, optional parent phone, and selected groups. Do not expose account creation or editable IDs.
 - View page: **Sessions** and **Assignments and assessments** sections, with pagination.
 - Sessions show date/time, teacher, group, attendance, and links to the session.
-- Assignment blocks show surah/range, memorization or revision, and assigning session/teacher. Filter All / To do / Assessed and type.
-- With no linked assessment: To do, no invented zero grade. Otherwise: Assessed with all linked grades/comments and assessing sessions. This does not imply a passing threshold.
-- Repeats appear as independent blocks linked to the source assessment; their grade never replaces the source grade.
+- Assignment blocks show surah/range, type, and the Pending/Passed label from `is_passed`. Filter All / Pending / Passed and type. The assigning session/teacher is not stored.
+- Show every linked assessment grade/comment with its assessing session and teacher. Pending assignments can already have attempts; a grade correction never automatically changes `is_passed`.
+- Full-passage retries add assessments to the same pending assignment. Smaller passages are separate student-owned assignments without a source foreign key; see the class diagram.
 
 ### Groups
 
@@ -118,8 +117,8 @@ Derive student assignment/history views through these existing relationships; do
 
 - List/view server-stored sessions; filter by date, group, teacher, and status.
 - Session roster links to student records and student-session context.
-- For each student-session, separate **assessed here** (`QuranAssessment.student_session_id`) from **assigned here** (`QuranAssignment.assigned_in_student_session_id`).
-- Assessments link to the source assignment, which may belong to an earlier session.
+- For each student-session, show **assessed here** through `QuranAssessment.student_session_id`. Assignments belong to the student, so there is no assigned-here relationship.
+- Each assessment links to its student-owned assignment. Repeated attempts may appear in several sessions.
 - No session create/delete or attendance-edit action in this panel. Teacher session creation belongs to the later teacher delivery. Existing/seeded records support history review now.
 
 ### Grade/comment correction
@@ -149,19 +148,21 @@ Do not generate empty controllers or resources merely to fill a project tree. Ke
 
 - RoleSeeder: stable role names without duplicating records.
 - AdminUserSeeder: in local/development and test environments, create the default Administrator account with email `admin@admin.com` and password `123456789`. Hash the password using Laravel's configured hasher. Make seeding idempotent: do not duplicate the user or reset an existing password on subsequent runs. Do not provision this known default account in production; production credentials must be supplied separately.
-- DemoSchoolSeeder: development/test-only teachers, students, memberships, earlier assignments, assessed/unassessed work, and repeats. Never run demo seeds automatically in production.
+- DemoSchoolSeeder: development/test-only teachers, students, memberships, student-owned pending/passed assignments, including pending work with several attempts and separate smaller-passage assignments. Never run demo seeds automatically in production.
 - Test panel access: administrator allowed, guest redirected, teacher denied.
 - Test atomic teacher creation, unique email, password hashing/reset, blank edit preserving the hash, and no hash leakage.
 - Test nullable parent phone, shared sibling phone, generated IDs, both membership edit entry points, and duplicate-pivot prevention.
-- Test session/student links, multiple assessments, To do/Assessed derivation, independent repeats, and no deletion actions.
+- Test session/student links, multiple assessments, stored Pending/Passed labels, repeated attempts without overwriting grades, and no deletion actions.
 - Test correction authorization, numeric validation, transactional direct updates, and consistent display across entry points.
-- Verify schema rollback across the assignment/assessment circular reference and database constraints.
+- Verify migration/rollback and database constraints. The revised assignment design has no circular reference. The user requested a clean restart: the old school migration files were replaced after rolling back their empty tables. Laravel infrastructure migrations remain unchanged. Do not apply this reset procedure to a populated deployment.
 
 ## 8. Execution checklist (after review)
 
 - [ ] Inspect environment; select Laravel/Filament/database versions.
 - [x] Scaffold Laravel in `backend/`, preserving the teacher prototype/docs.
-- [x] Create ordered migrations and models/relationships, including both pivot tables.
+- [x] Create initial migrations and models/relationships, including both pivot tables.
+- [x] Rebuild the school models and migrations for the revised class diagram and run them on local MySQL.
+- [x] Verify migration rollback/re-run and model relationships, including repeated assessments and both pivots.
 - [ ] Add role and safe development seed data.
 - [ ] Configure `/admin` session authentication and administrator policies.
 - [ ] Implement teacher/student/group resources.
@@ -176,3 +177,14 @@ Do not generate empty controllers or resources merely to fill a project tree. Ke
 3. Final teacher/group access mapping remains unresolved; do not invent a Group teacher foreign key. This does not block administrator data management.
 4. Administrator attendance correction remains unauthorized; assignment passage editing and assessment creation/deletion are not included.
 5. The later teacher phase still needs API/JWT, durable offline storage, revision/idempotency behavior, and conflict handling. The earlier decision was JWT with no `exp`; it does not apply to Filament's session login.
+
+## Current model verification
+
+Run from `backend/`:
+
+```bash
+./vendor/bin/sail artisan test
+./vendor/bin/sail artisan migrate:status
+```
+
+The feature tests use isolated SQLite in memory. They cover repeated whole/decimal assessment grades on one assignment, explicit `is_passed` changes, both pivot relationships, duplicate membership rejection, and preserved session rosters after group membership changes. Local MySQL migrations are checked separately, including rollback and re-run. This does not implement teacher/admin screens or application-level domain validation.

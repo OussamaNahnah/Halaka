@@ -6,7 +6,7 @@ The planned application will use **Laravel (PHP)** and support teachers, adminis
 
 ## Status
 
-Laravel and Sail are installed in `backend/`, using the local MySQL database `halaka`. The Arabic teacher prototype is preserved. The domain models, relationships, and migration files are created; the Filament panel is not implemented.
+Laravel and Sail are installed in `backend/`, using the local MySQL database `halaka`. The Arabic teacher prototype is preserved. Domain models and migrations follow the student-owned assignment design with boolean `is_passed` and multiple assessment attempts. The Filament panel is not implemented.
 
 ## Project structure
 

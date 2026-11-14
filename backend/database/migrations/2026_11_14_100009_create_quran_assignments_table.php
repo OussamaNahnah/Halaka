@@ -10,12 +10,12 @@ return new class extends Migration
     {
         Schema::create('quran_assignments', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('assigned_in_student_session_id')->constrained('student_sessions')->restrictOnDelete();
+            $table->foreignId('student_id')->constrained()->restrictOnDelete();
             $table->string('surah_name');
             $table->unsignedInteger('from_ayah');
             $table->unsignedInteger('to_ayah');
             $table->enum('type', ['new_memorization', 'revision']);
-            $table->foreignId('repeat_of_assessment_id')->nullable();
+            $table->boolean('is_passed')->default(false);
             $table->timestamps();
         });
     }

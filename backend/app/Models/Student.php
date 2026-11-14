@@ -25,4 +25,9 @@ class Student extends Model
     {
         return $this->hasMany(StudentSession::class);
     }
+
+    public function assignments(): HasMany
+    {
+        return $this->hasMany(QuranAssignment::class);
+    }
 }

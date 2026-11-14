@@ -27,11 +27,6 @@ class StudentSession extends Model
         return $this->belongsTo(TeachingSession::class, 'session_id');
     }
 
-    public function assignments(): HasMany
-    {
-        return $this->hasMany(QuranAssignment::class, 'assigned_in_student_session_id');
-    }
-
     public function assessments(): HasMany
     {
         return $this->hasMany(QuranAssessment::class);

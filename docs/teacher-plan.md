@@ -21,24 +21,24 @@ Arabic RTL, Tajawal, Halaka branding, compact headers with inline logo, accessib
 
 ### Today's assessments
 
-- Show earlier assignments awaiting assessment and assessments already recorded in this session. Work assessed in an earlier session belongs in history; assigning an explicit repeat creates fresh work.
+- Show the student's pending assignments, including those attempted in earlier sessions, plus assessments already recorded in the current session. Passed assignments leave the pending list; retain every attempt in history.
 - Each row shows memorization/revision type, surah, inclusive ayah range, and a separate grade field. Grades accept any numeric value, with or without decimals; empty is unassessed, not zero.
 - An optional comment expands to the full row width. Preserve unsaved input when adding a passage, navigating, or refreshing the view.
-- Repetition: save the assessment first, then select the same surah's full range or a smaller contained range. Create a new assignment linked to that assessment. Keep the original grade and all later repeat grades independent.
-- No assignment from the current session can be assessed in that same session. Validate same-student ownership for every link.
+- After an assessment, let the teacher explicitly set `is_passed` (`false` for pending, `true` for passed); do not infer passing from a grade. Full-passage retries create another assessment on the same pending assignment. Smaller passages use separate pending assignments without a repeat/source link.
+- Assignments belong directly to students, with no assigning-session relationship. Validate that each assessment's assignment and roster record belong to the same student.
 
 ### Next assignments
 
-- Compact rows with type, surah/range, and repeat/source link when relevant.
+- Compact rows with type, surah/range, and pending/passed status.
 - “Add assignment” reveals the form on demand: type, surah, first ayah, last ayah. Use the complete validated Quran catalog, not the prototype's seven-surah sample.
-- Allow several new-memorization and revision assignments for the same student/session. Adding one must not clear assessment fields.
-- Save additions locally immediately. Remove only unassessed assignments; preserve assignments already referenced by assessments. Editing/removal must retain valid repeat links.
+- Allow several new-memorization and revision assignments for the same student. Adding one must not clear assessment fields.
+- Save additions locally immediately. Remove only unassessed assignments; preserve assignments already referenced by assessments. Preserve the passage of assignments already assessed.
 
 ### Finish and navigate
 
 - Finish student validates and saves entered assessment work and assignments, sets `evaluated_at`, and marks the student present. Return to the roster with Recorded status.
 - Previous/next saves work but does not implicitly finish the student. A student with no earlier passages can still be finished.
-- Never silently discard partially entered assignment/repeat forms: require saving them or an explicit discard decision before navigation.
+- Never silently discard partially entered assignment forms: require saving them or an explicit discard decision before navigation.
 
 ## 3. Local storage and offline preparation
 
@@ -107,7 +107,7 @@ All reads/writes must enforce teacher ownership and classroom access, including 
 
 - Unique session `client_uuid` and a server revision counter; preserve domain IDs from the foundation.
 - A durable submission acknowledgement/idempotency record, including teacher, submission identity, payload fingerprint, and returned local-to-server ID mapping. Exact names and indexes belong to the API implementation review.
-- Stable local identities for new child records and server resolution of repeat/assignment references.
+- Stable local identities for student assignments and assessment attempts, with server resolution of assignment references and version checks for shared assignment `is_passed` value.
 - Wire Filament grade/comment corrections into the same session revision check before uploads are enabled. Device-only `sync_status` and `last_synced_at` are not automatically server columns.
 - Choose the JWT package, secure browser credential persistence, and logout invalidation design before coding authentication. No plaintext passwords in caches or queues.
 
@@ -132,7 +132,7 @@ Adapt to the actual Laravel asset pipeline. Do not introduce a separate frontend
 ## 7. Tests and acceptance
 
 - Real login/logout, protected API access, ownership checks, nested-record access rejection, and no credential/hash exposure.
-- Group selection, roster snapshots, saved edits, multiple passages/types, integer and decimal grades, invalid grades/ranges, optional comments, and independent repeats.
+- Group selection, roster snapshots, saved edits, multiple passages/types, integer and decimal grades, invalid grades/ranges, optional comments, and repeated attempts with teacher-selected pending/passed status.
 - Finish student and previous/next behavior; final absent-student confirmation; no silent form loss or zero grades for unassessed passages.
 - Durable local writes, storage failure, user isolation, tab-close recovery, and offline cold reopening with fonts/assets available.
 - Atomic server submission, validation rollback, dependency ordering, dropped response and retry without duplicates, and local/server identifier mapping.

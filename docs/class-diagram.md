@@ -7,6 +7,8 @@ Delivery 1 implements the database and Filament; teacher API, JWT, and offline/s
 
 This file is the authoritative design reference for the Laravel school management study project. Keep the Mermaid diagram and the rules below in sync.
 
+**Implementation status:** Laravel models and migrations now follow this diagram, with student-owned assignments and `is_passed`. The standalone teacher prototype still uses the previous assignment design and remains a historical interaction reference.
+
 ## UML class diagram
 
 ```mermaid
@@ -56,12 +58,12 @@ class StudentSession {
 }
 class QuranAssignment {
   int id
-  int assigned_in_student_session_id
+  int student_id
   string surah_name
   int from_ayah
   int to_ayah
   string type
-  int repeat_of_assessment_id
+  bool is_passed
 }
 class QuranAssessment {
   int id
@@ -79,10 +81,9 @@ Group "0..1" -- "0..*" Session : schedules
 Teacher "1" -- "0..*" Session : teaches
 Session "1" -- "0..*" StudentSession : contains
 Student "1" -- "0..*" StudentSession : has
-StudentSession "1" -- "0..*" QuranAssignment : assigns for next session
+Student "1" -- "0..*" QuranAssignment : owns
 StudentSession "1" -- "0..*" QuranAssessment : records todays assessment
 QuranAssignment "1" -- "0..*" QuranAssessment : assessed through
-QuranAssessment "0..1" -- "0..*" QuranAssignment : original assessment for repeats
 ```
 
 ## Business rules
@@ -104,14 +105,15 @@ QuranAssessment "0..1" -- "0..*" QuranAssignment : original assessment for repea
 - Attendance is recorded through student/session completion as described above; finishing a previously absent student during correction marks them present in the next submitted revision. Each student has at most one `StudentSession` record per session.
 - For each student in a Quran session, the teacher has two sections: **Today's assessment**, which records a grade and optional comment for each previously assigned passage recited today, and **Next session's assignments**, which records passages to prepare.
 - Both sections support `new_memorization` and `revision`. Each assigned passage has its own `QuranAssignment`; each assessment of that passage has its own `QuranAssessment` and grade. The assessment gets its passage and type from the assignment, rather than duplicating them.
-- Each assignment covers one surah, selected by name, and an inclusive ayah range, such as Al-Mulk, ayahs 1–10. Assignments are linked to the student's session in which they were given; assessments are linked to the student's session in which the recitation was assessed. The assignment must have been given earlier than its assessment.
-- An assessment and its assignment must belong to the same student, through their respective `StudentSession` records. An assignment may remain unassessed or have several assessments over time.
-- After an assessment, the teacher can assign a repeat of the full passage or a smaller range within it. Store this as a new `QuranAssignment` linked to the original assessment, for the same student and surah. Each repeat has exactly one original assessment; an ordinary assignment has none. An assessment can lead to several repeat assignments.
-- Preserve the original assessment and grade when assigning a repeat. Assessing the repeat creates a separate assessment and grade linked to the new assignment.
-- Example: a student receives **6/10** for Al-Mulk, ayahs **1–10**. The teacher assigns ayahs **4–6** for the next session, linking the new assignment to that assessment. When ayahs 4–6 are assessed, their new grade is stored separately; the original 6/10 remains unchanged. Grades have no fixed numeric range.
+- Each assignment belongs directly to one student and covers one surah, selected by name, with an inclusive ayah range and type. It has no assigning-session relationship; the model does not record which session or teacher originally assigned it.
+- Each assessment references one assignment and one `StudentSession`, identifying the student and session of that attempt. Its assignment's `student_id` must match the roster record's `student_id`. An assignment can have several assessments across sessions, preserving every attempt's grade and comment.
+- `QuranAssignment.is_passed` starts as `false` (pending). After assessing a passage, the teacher explicitly chooses whether to set it to `true` (passed). A grade or the existence of an assessment never automatically marks it passed; no passing threshold is defined.
+- If the full passage needs another attempt, keep the same assignment pending and record a new assessment in a later session. Do not create a copy or replace an earlier assessment. Passed assignments leave the pending list, but all attempts remain visible in history.
+- For a smaller passage, create a separate pending assignment for the same student with the smaller ayah range. Preserve the original passage and all its assessments. No repeat/source foreign key is required; the original assignment's `is_passed` value remains an explicit teacher decision.
+- Example: a student receives a grade of **6** for Al-Mulk, ayahs **1–10**. The teacher leaves the assignment pending. A later session records a new assessment on that same assignment; when satisfied, the teacher marks it passed. If only ayahs **4–6** need practice, the teacher can instead create a separate pending assignment for that range. Earlier grades remain unchanged.
 - An administrator can view all teachers, students, groups, and sessions stored on the server, including attendance records, grades, and comments. Work stored only on a teacher's device is unavailable to other accounts until sent.
 
-- Administrators may correct an existing `QuranAssessment.grade` and `comment`, preserving its student, assignment, and assessing-session links. Update the existing assessment row directly; no separate assessment-change model/table or audit history is required. A correction advances the relevant server revision; stale teacher submissions must not silently overwrite it. Assignment completion labels remain derived from linked assessments, not the grade value.
+- Administrators may correct an existing `QuranAssessment.grade` and `comment`, preserving its student, assignment, and assessing-session links. Update the existing assessment row directly; no separate assessment-change model/table or audit history is required. A correction advances the relevant server revision; stale teacher submissions must not silently overwrite it. Assignment labels use `is_passed`; correcting a grade does not automatically change that value.
 
 ## Attribute notes
 
@@ -129,9 +131,9 @@ QuranAssessment "0..1" -- "0..*" QuranAssignment : original assessment for repea
 - The MVP stores one parent/guardian contact number per student; multiple contacts and parent profiles are deferred.
 - `StudentSession.evaluated_at` is nullable and records when the teacher explicitly finishes the student. Before session completion, a null value means not evaluated yet; on completion it determines absence. `attendance_status` starts as `not_marked` and becomes `present` or `absent` under these rules.
 - `StudentSession.id` is the primary key. Keep a unique constraint on `(student_id, session_id)` so each student has only one attendance record per session. Grades and comments belong to `QuranAssessment`, not `StudentSession`.
-- `QuranAssignment.assigned_in_student_session_id` references `StudentSession.id` and identifies when and to whom the assignment was given.
+- `QuranAssignment.student_id` is required and references `Student.id`. Assignments are independent of sessions; assessment attempts provide their session history.
+- `QuranAssignment.is_passed` is a required boolean, defaulting to `false`. False means pending; true means passed. Laravel casts it to boolean. It is explicitly set by the teacher, independently of session completion and grade values.
 - `QuranAssignment.surah_name`, `from_ayah`, `to_ayah`, and `type` are required. Validate the selected surah and ensure `1 <= from_ayah <= to_ayah` within that surah's ayah count. `type` must be `new_memorization` or `revision`.
-- `QuranAssignment.repeat_of_assessment_id` is nullable and references `QuranAssessment.id`. For a repeat, validate that the student and surah match the original assessed assignment and that the new range is contained within its range (the full range is allowed).
 - `QuranAssessment.student_session_id` references the session attendance record where recitation was assessed; `quran_assignment_id` references the assignment being checked. Both references are required. Validate that both records belong to the same student.
 - `QuranAssessment.grade` is required; `comment` is optional. The passage and type are obtained through `quran_assignment_id`. Require a numeric grade, with or without decimals; no fixed range or decimal-place limit. Store as a floating-point number (finite machine precision).
 
@@ -141,5 +143,5 @@ QuranAssessment "0..1" -- "0..*" QuranAssignment : original assessment for repea
 - Confirm whether administrators can correct attendance entered by a teacher; grade/comment correction is already allowed.
 - Confirm whether students can belong to several groups and whether every session must belong to a group. The initial design allows multiple memberships and optional session groups.
 - Decide whether creating a group session automatically creates its `StudentSession` roster from current group members.
-- Decide how to resolve concurrent edits from multiple devices, including submission version checks and conflict recovery. Until resolved, never silently overwrite a newer server revision.
+- Decide how to resolve concurrent edits from multiple devices, including submission version checks and conflict recovery for shared assignment status as well as session attempts. Until resolved, never silently overwrite a newer server revision.
 - Decide how long to retain acknowledged local submissions, how offline data is refreshed, and whether automatic retry supplements the explicit Retry action.
