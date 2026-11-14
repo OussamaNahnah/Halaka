@@ -6,7 +6,7 @@ The planned application will use **Laravel (PHP)** and support teachers, adminis
 
 ## Status
 
-Laravel and Sail are installed in `backend/`, using the local MySQL database `halaka`. The Arabic teacher prototype is preserved. Domain models and migrations follow the student-owned assignment design with boolean `is_passed` and multiple assessment attempts. The Filament panel is not implemented.
+Laravel and Sail are installed in `backend/`, using the local MySQL database `halaka`. The Arabic teacher prototype is preserved. Domain models and migrations follow the student-owned assignment design with boolean `is_passed` and multiple assessment attempts. Filament 5 is installed with an Arabic administrator-only login and dashboard at `/admin`; administrator, teacher, student, group, session, student-session, assignment, and assessment resources are implemented.
 
 ## Project structure
 
@@ -19,9 +19,27 @@ Halaka/
 └── README.md
 ```
 
+## Administrator panel
+
+Start Sail from `backend/` with `./vendor/bin/sail up -d`, then open http://localhost/admin.
+
+For a fresh installation, run from `backend/` after configuring `.env` and installing Composer dependencies:
+
+```bash
+./vendor/bin/sail artisan key:generate
+./vendor/bin/sail artisan migrate
+./vendor/bin/sail artisan db:seed
+```
+
+Do not regenerate an existing application key. Composer publishes Filament's assets through its `filament:upgrade` hook; no frontend build is needed for the standard panel.
+
+The local/test administrator credentials are defined in [AdminUserSeeder](docs/laravel-plan.md#7-seeders-and-tests). Seeding again preserves an existing password. The default account is not created in production. Only users with the Administrator role can enter the panel; teachers and students are denied.
+
+Arabic RTL and Tajawal are configured with Halaka colors and standard Filament components. Tajawal loads from the font provider when online. The dashboard links to all eight resources. The Teaching menu contains sessions, student-session records (طلاب الحصص), assignments, and assessments, each with separate list/create/view/edit pages. Administrators can create/edit other administrator accounts, teachers and their accounts, students, groups, sessions, rosters/attendance, assignments, and assessments. School records support soft deletion and restoration through the deleted-records filter. Linked history is retained without cascading deletion; no permanent-delete actions are offered. The logged-in user cannot delete its own account, including in bulk selection. Archived administrator accounts cannot log in until restored.
+
 ## MVP
 
-The first milestone is the Laravel database and Filament administration panel, with no APIs. The full MVP later adds teacher sessions, Quran assessments and assignments, local saving, and server submission. The user installed the Laravel scaffold; the models and migrations are now created; Filament implementation awaits review. Parent features and Telegram are deferred. See the [MVP scope](docs/mvp.md).
+The first milestone is the Laravel database and Filament administration panel, with no APIs. The full MVP later adds teacher sessions, Quran assessments and assignments, local saving, and server submission. The user installed the Laravel scaffold; the models and migrations are now created; Filament login/dashboard are installed; administrator, teacher, student, group, session, student-session, assignment, and assessment resources are implemented. Parent features and Telegram are deferred. See the [MVP scope](docs/mvp.md).
 
 ## Documentation
 
@@ -33,7 +51,7 @@ Read these in order; each owns a distinct part of the specification:
 
 4. [Teacher application plan](docs/teacher-plan.md) — Delivery 2 screens, offline storage, API/submission design, and tests.
 
-Project creation, models, and migrations are approved. Review the implementation plan before implementing the Filament panel. The first milestone has no APIs.
+Project creation, models, migrations, and Filament panel installation are approved. School management resources are approved and implemented; remaining teacher/API work follows the separate delivery review. The first milestone has no APIs.
 
 ## Teacher prototype
 

@@ -11,7 +11,7 @@ Arabic RTL, Tajawal, Halaka branding, compact headers with inline logo, accessib
 | Screen | Required interaction |
 | --- | --- |
 | Login | Email/password assigned by the administrator; real authentication. No demo login in production. First login requires a connection. |
-| Home | One compact list of sessions, newest first. Merge local and server records by stable identity. Show completion and sync states separately; create-session action at the bottom. Open/edit, never delete. |
+| Home | One compact list of sessions, newest first. Merge local and server records by stable identity. Show completion and sync states separately; create-session action at the bottom. Teachers open/edit, never delete; administrator archival/restoration is handled by Filament. |
 | Create/edit session | Choose date, time, and group from a dropdown. Create a local draft and snapshot the group's members into its roster. Editing must preserve saved student work; never rebuild historical rosters silently. |
 | Session roster | Every student shows Not evaluated yet or Recorded. Open any student directly; no separate attendance gate. Finish-and-send action below the roster. |
 | Student worksheet | Today's assessments and next assignments together, with one Finish student action and previous/next navigation. Save before leaving. |
@@ -67,14 +67,14 @@ Use IndexedDB, scoped by authenticated user, rather than the prototype's shared 
 5. Mark only the acknowledged revision `synced`; retain newer local edits as `local_only`. A completed session may still be unsent.
 6. Keep the same submission ID/payload on retry. For edited work, create a new revision/submission ID while preserving the session's client UUID.
 7. Resolve dependencies before submission: an assessment may reference an assignment from an earlier offline session. Send and acknowledge that source first; never send unresolved child links.
-8. Server validation failure leaves work locally available for correction. Reauthentication must not discard queued work. Stale-version conflicts preserve local edits and do not overwrite newer administrator corrections.
+8. Server validation failure leaves work locally available for correction. Reauthentication must not discard queued work. Stale-version conflicts preserve local edits and do not overwrite newer administrator changes or resurrect archived records.
 
 ## 5. Proposed Laravel components — later delivery only
 
 | Component | Responsibility |
 | --- | --- |
 | TeacherAppController | Serve the teacher application shell through a web route; no duplicated admin UI. |
-| TeacherAuthController | Login/logout with the agreed JWT policy; no automatic expiry (`exp` omitted), no refresh flow, real server-side logout invalidation. |
+| TeacherAuthController | Login/logout with the agreed JWT policy; no automatic expiry (`exp` omitted), no refresh flow, real server-side logout invalidation; reject archived teacher profiles. |
 | TeacherProfileController | Read profile and change password online. |
 | TeacherClassroomController | Authorized groups, group roster, pending assignments, and Quran catalog. |
 | TeacherSessionController | List/retrieve accepted sessions; accept atomic new/edited session submissions. |
@@ -108,7 +108,7 @@ All reads/writes must enforce teacher ownership and classroom access, including 
 - Unique session `client_uuid` and a server revision counter; preserve domain IDs from the foundation.
 - A durable submission acknowledgement/idempotency record, including teacher, submission identity, payload fingerprint, and returned local-to-server ID mapping. Exact names and indexes belong to the API implementation review.
 - Stable local identities for student assignments and assessment attempts, with server resolution of assignment references and version checks for shared assignment `is_passed` value.
-- Wire Filament grade/comment corrections into the same session revision check before uploads are enabled. Device-only `sync_status` and `last_synced_at` are not automatically server columns.
+- Wire all Filament administrator changes, including attendance edits, assessment link changes, soft deletion and restoration, into the relevant version checks before uploads are enabled. Device-only `sync_status` and `last_synced_at` are not automatically server columns.
 - Choose the JWT package, secure browser credential persistence, and logout invalidation design before coding authentication. No plaintext passwords in caches or queues.
 
 ## 6. Suggested frontend structure

@@ -1,4 +1,4 @@
-sail up -d<?php
+<?php
 
 return [
 

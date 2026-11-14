@@ -1,21 +1,23 @@
 # Halaka — MVP
 
-One Laravel application for Quran-school administration and teacher session recording. **Current status: Laravel/Sail in `backend/` with local MySQL database `halaka`, plus a teacher HTML prototype. Domain models and migrations implement the latest student-owned assignment design with `is_passed`. Filament remains unimplemented.**
+One Laravel application for Quran-school administration and teacher session recording. **Current status: Laravel/Sail in `backend/` with local MySQL database `halaka`, plus a teacher HTML prototype. Domain models and migrations implement the latest student-owned assignment design with `is_passed`. Filament 5 login/dashboard and administrator-only access are installed; full administrator management is implemented, including nested attendance/assignment/assessment editors and soft deletion/restoration. Teacher/API/offline functionality remains planned.**
 
 ## Delivery 1 — build first, after plan review
 
 Use a **Filament administrator panel** in the same Laravel project, with Laravel session authentication. No APIs or JWT implementation in this delivery.
 
+- **Administrators:** manage administrator accounts (name, unique email, initial/reset password) with soft-delete/restore. All have the same panel privileges; the logged-in user cannot delete itself, including in bulk.
 - **Teachers:** create/edit linked accounts, names, unique emails, and administrator-assigned passwords; optional password reset.
 - **Students:** create/edit names and optional `parent_phone`; database-generated IDs; group memberships. No student accounts.
 - **Groups:** create/edit names and student membership; no Group teacher foreign key.
-- **Sessions:** inspect existing/seeded sessions, rosters, attendance, assessments, and assignments using linked student/session views.
+- **Sessions:** create/edit sessions, explicitly select initial roster students, and manage attendance through linked student/session views. Editing group membership or session group never silently rebuilds saved rosters.
 - **Student history:** show each student-owned assignment as Pending or Passed, with all assessment attempts, grades/comments, and assessing sessions/teachers. See the class diagram for status and repeat rules.
-- **Corrections:** administrators may edit existing assessment grades/comments directly on the existing assessment record; no separate change-log table. No attendance correction, assignment-passage editing, assessment creation/deletion, or resource delete actions.
+- **Full administration:** create/edit student assignments and assessment attempts, change `is_passed`, and correct attendance. Assessment references must belong to the same student; passage ranges must be valid.
+- **Deletion:** soft-delete/restore teachers, students, groups, sessions, roster records, assignments, and assessments. Keep linked records and memberships intact; no permanent-delete actions or separate change-log table.
 
 Arabic RTL, Halaka wordmark, Tajawal, forest-green/gold branding, standard Filament controls. Wide desktop workspace with responsive mobile layouts. Use standard Filament components; the administrator requirements are defined in the implementation plan.
 
-Read the [Laravel implementation plan](laravel-plan.md) for migrations, relationships, Filament resources, policies, actions, tests, and review points. **The user will review the plan before implementation.**
+Read the [Laravel implementation plan](laravel-plan.md) for migrations, relationships, Filament resources, policies, actions, tests, and review points. **The user approved the administration resources. Later teacher delivery still requires its own review.**
 
 ## Delivery 2 — teacher application, planned later
 
@@ -43,10 +45,10 @@ The [class diagram](class-diagram.md) is the authoritative domain model.
 
 ## Deferred
 
-Parent/student login and screens, Telegram and notifications, native apps/install prompts, analytics/exports, automatic background synchronization, and multi-device conflict-resolution UI. Administrator attendance correction and teacher/group access mapping remain unresolved; see model open decisions.
+Parent/student login and screens, Telegram and notifications, native apps/install prompts, analytics/exports, automatic background synchronization, and multi-device conflict-resolution UI. Teacher/group access mapping remains unresolved; see model open decisions.
 
 ## Acceptance by milestone
 
-**Delivery 1:** administrator-only panel access; atomic teacher/account creation and password reset; student/group management; linked session/student/assignment/assessment views; correct Pending/Passed display; authorized grade/comment direct corrections; no delete actions. All relevant validation/policy/relationship tests pass.
+**Delivery 1:** administrator-only panel access; atomic administrator/teacher account creation and password reset; self-deletion protection; student/group management; linked session/student/assignment/assessment views; correct Pending/Passed display; full authorized management of attendance, assignments and assessments; soft-delete/restore without losing linked history. All relevant validation/policy/relationship tests pass.
 
 **Full MVP:** teacher completes a real class, closes/reopens the prepared interface offline without losing work, reconnects and submits exactly once, then sees accepted data. Corrections are reflected consistently and stale submissions cannot undo them. No real passwords are stored in browser drafts.
