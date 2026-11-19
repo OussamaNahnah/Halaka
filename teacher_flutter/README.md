@@ -21,11 +21,11 @@ From this directory:
 
 ```bash
 flutter pub get
-# Android emulator: 10.0.2.2 reaches the development machine.
-flutter run --dart-define=API_URL=http://10.0.2.2/api
+# Android emulator defaults to the Sail server at http://10.0.2.2/api.
+flutter run
 ```
 
-For a real device, use your reachable server URL, including `/api`. Use HTTPS in production. Android debug builds permit local HTTP; release builds retain HTTPS defaults. iOS requires macOS/Xcode and a reachable HTTPS API. API URL is build configuration, not a saved preference. The existing scaffold includes Android and iOS; this change does not replace the deployed Vue app or Laravel `/teacher/` route.
+For a real device, pass `--dart-define=API_URL=https://YOUR_HOST/api` with your reachable server URL. Android defaults to the emulator host alias; other platforms default to `http://localhost/api`. Use HTTPS in production. Android debug builds permit local HTTP; release builds retain HTTPS defaults. iOS requires macOS/Xcode and a reachable HTTPS API. API URL is build configuration, not a saved preference. The existing scaffold includes Android and iOS; this change does not replace the deployed Vue app or Laravel `/teacher/` route.
 
 ```bash
 flutter analyze
@@ -45,4 +45,6 @@ All classroom reads must match the same school revision. Existing attempt identi
 
 ## Verification and limits
 
-Tests cover profile/token-only writes, server logout, immutable retries, allowed attempt fields, absent-student payloads, grade validation, a mocked Laravel teaching flow, narrow/wide worksheet navigation, and unfinished assignment-form protection. Run analysis/tests above. Android debug build/install and the Arabic login screen were verified on the local emulator against the Sail API host. The Sail teacher backend suite passed (30 tests). A complete signed-in device teaching session remains to be checked with a Teacher account. The UI follows the existing Vue teacher app: bundled Tajawal, forest green/gold palette, compact session rows, sticky session/student actions, gold unfinished-student rows, inline grading, expandable full-width notes, inline next-assignment forms, previous/next student navigation, and temporary dark mode. Automatic conflict merging is not included. Session metadata edits preserve the existing roster.
+Tests cover profile/token-only writes, server logout, immutable retries, allowed attempt fields, absent-student payloads, grade validation, a mocked Laravel teaching flow, narrow/wide worksheet navigation, and unfinished assignment-form protection. Run analysis/tests above. Android debug build/install and the Arabic login screen were verified on the local emulator against the Sail API host. The Sail teacher backend suite passed (30 tests). A complete signed-in device teaching session remains to be checked with a Teacher account. The UI follows the existing Vue teacher app: bundled Tajawal, forest green/gold palette, compact session rows, a fixed create/resume action above the bottom navigation on the sessions screen, bottom action docks for session sending and student completion, gold unfinished-student rows, inline grading, expandable full-width notes, inline next-assignment forms, previous/next student navigation, and temporary dark mode. Automatic conflict merging is not included. Session metadata edits preserve the existing roster. Contextual headers keep back, title, date/progress and edit at the top; primary actions stay at the bottom. Session/student task screens hide the global tabs, and student previous/next controls share the finish dock. Create/edit uses a bottom sheet with separate date and time pickers. Login and profile use the same compact headers and spacing.
+
+The home action strip and tabs share one opaque surface. The action strip does not add a second gesture-area inset; only the navigation bar handles it. Task docks retain their own safe-area padding. Evaluation passages use simple dividers within a section instead of nested bordered cards.

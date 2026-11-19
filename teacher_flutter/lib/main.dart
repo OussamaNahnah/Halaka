@@ -6,6 +6,7 @@ import 'api.dart';
 import 'draft.dart';
 import 'ui.dart';
 import 'worksheet.dart';
+import 'session_editor.dart';
 
 void main() => runApp(const HalakaApp());
 
@@ -126,72 +127,14 @@ class _HomeState extends State<Home> {
         groups.firstOrNull?['id'];
     var date = DateTime.now();
     if (session == null) {
-      final ok = await showDialog<bool>(
-        context: context,
-        builder: (c) => StatefulBuilder(
-          builder: (c, update) => AlertDialog(
-            title: const Text('حصة جديدة'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                DropdownButtonFormField<int>(
-                  initialValue: group,
-                  decoration: const InputDecoration(labelText: 'المجموعة'),
-                  items: groups
-                      .map(
-                        (g) => DropdownMenuItem<int>(
-                          value: g['id'],
-                          child: Text(g['name']),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (v) => update(() => group = v),
-                ),
-                TextButton(
-                  child: Text(
-                    'التاريخ والوقت: ${date.toString().substring(0, 16)}',
-                  ),
-                  onPressed: () async {
-                    final day = await showDatePicker(
-                      context: c,
-                      initialDate: date,
-                      firstDate: DateTime(2000),
-                      lastDate: DateTime(2100),
-                    );
-                    if (day == null || !c.mounted) return;
-                    final time = await showTimePicker(
-                      context: c,
-                      initialTime: TimeOfDay.fromDateTime(date),
-                    );
-                    if (time != null) {
-                      update(
-                        () => date = DateTime(
-                          day.year,
-                          day.month,
-                          day.day,
-                          time.hour,
-                          time.minute,
-                        ),
-                      );
-                    }
-                  },
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(c, false),
-                child: const Text('إلغاء'),
-              ),
-              FilledButton(
-                onPressed: group == null ? null : () => Navigator.pop(c, true),
-                child: const Text('بدء'),
-              ),
-            ],
-          ),
-        ),
+      final selected = await showSessionEditor(
+        context,
+        groups: groups,
+        groupId: group,
       );
-      if (ok != true) return;
+      if (selected == null || !mounted) return;
+      group = selected['group_id'];
+      date = DateTime.parse(selected['timestamp']);
     }
     await run(() async {
       for (var attempt = 0; attempt < 3; attempt++) {
@@ -325,9 +268,9 @@ class _HomeState extends State<Home> {
       const Text(
         'متابعة أقرب،\nلكل طالب.',
         style: TextStyle(
-          fontSize: 38,
+          fontSize: 30,
           fontWeight: FontWeight.w800,
-          height: 1.5,
+          height: 1.3,
         ),
       ),
       const Text('سجّل الدخول بحساب الأستاذ الذي أنشأته الإدارة.'),
@@ -429,23 +372,25 @@ class _HomeState extends State<Home> {
       context: context,
       builder: (c) => AlertDialog(
         title: const Text('تغيير كلمة المرور'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (final entry in [
-              (current, 'كلمة المرور الحالية'),
-              (next, 'كلمة المرور الجديدة'),
-              (confirmation, 'تأكيد كلمة المرور'),
-            ])
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: TextField(
-                  controller: entry.$1,
-                  obscureText: true,
-                  decoration: InputDecoration(labelText: entry.$2),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final entry in [
+                (current, 'كلمة المرور الحالية'),
+                (next, 'كلمة المرور الجديدة'),
+                (confirmation, 'تأكيد كلمة المرور'),
+              ])
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: TextField(
+                    controller: entry.$1,
+                    obscureText: true,
+                    decoration: InputDecoration(labelText: entry.$2),
+                  ),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -527,83 +472,14 @@ class _HomeState extends State<Home> {
   Future<void> editMetadata() async {
     final d = draft;
     if (d == null || d.locked) return;
-    int? group = d.payload['group_id'];
-    DateTime date = DateTime.parse(d.payload['timestamp']).toLocal();
-    final saved = await showDialog<bool>(
-      context: context,
-      builder: (c) => StatefulBuilder(
-        builder: (c, update) => AlertDialog(
-          title: const Text('تعديل الحصة'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              DropdownButtonFormField<int>(
-                initialValue: groups.any((g) => g['id'] == group)
-                    ? group
-                    : null,
-                decoration: const InputDecoration(labelText: 'المجموعة'),
-                items: groups
-                    .map(
-                      (g) => DropdownMenuItem<int>(
-                        value: g['id'],
-                        child: Text(g['name']),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (v) => update(() => group = v),
-              ),
-              const SizedBox(height: 12),
-              OutlinedButton.icon(
-                icon: const Icon(Icons.calendar_today_outlined, size: 18),
-                label: Text('${dateLabel(c, date)} · ${timeLabel(c, date)}'),
-                onPressed: () async {
-                  final day = await showDatePicker(
-                    context: c,
-                    initialDate: date,
-                    firstDate: DateTime(2000),
-                    lastDate: DateTime(2100),
-                  );
-                  if (day == null || !c.mounted) return;
-                  final time = await showTimePicker(
-                    context: c,
-                    initialTime: TimeOfDay.fromDateTime(date),
-                  );
-                  if (time != null) {
-                    update(
-                      () => date = DateTime(
-                        day.year,
-                        day.month,
-                        day.day,
-                        time.hour,
-                        time.minute,
-                      ),
-                    );
-                  }
-                },
-              ),
-              const SizedBox(height: 12),
-              const Text('تغيير المجموعة يحافظ على طلاب الحصة والعمل المسجل.'),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(c),
-              child: const Text('إلغاء'),
-            ),
-            FilledButton(
-              onPressed: group == null ? null : () => Navigator.pop(c, true),
-              child: const Text('حفظ التعديل'),
-            ),
-          ],
-        ),
-      ),
+    final selected = await showSessionEditor(
+      context,
+      groups: groups,
+      groupId: d.payload['group_id'],
+      timestamp: d.payload['timestamp'],
+      editing: true,
     );
-    if (saved == true && mounted) {
-      setState(() {
-        d.payload['group_id'] = group;
-        d.payload['timestamp'] = date.toUtc().toIso8601String();
-      });
-    }
+    if (selected != null && mounted) setState(() => d.payload.addAll(selected));
   }
 
   String groupName(SessionDraft d) =>
@@ -611,90 +487,28 @@ class _HomeState extends State<Home> {
           .where((g) => g['id'] == d.payload['group_id'])
           .firstOrNull?['name'] ??
       'الحصة';
-  Widget toolbar() {
-    final d = draft;
-    final roster = showRoster && d != null;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (roster)
-            TextButton.icon(
-              style: TextButton.styleFrom(
-                alignment: AlignmentDirectional.centerStart,
-              ),
-              onPressed: () => setState(() => showRoster = false),
-              icon: const Icon(Icons.arrow_forward, size: 18),
-              label: const Text('الحصص'),
-            ),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  roster ? groupName(d) : 'الحصص',
-                  style: const TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              if (roster)
-                OutlinedButton.icon(
-                  onPressed: busy || d.locked ? null : editMetadata,
-                  icon: const Icon(Icons.edit_outlined, size: 16),
-                  label: const Text('تعديل'),
-                ),
-            ],
-          ),
-          if (roster)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Text(
-                '${dateLabel(context, d.payload['timestamp'])} · ${timeLabel(context, d.payload['timestamp'])}',
-              ),
-            ),
-          if (!roster)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: Text(
-                'أهلًا ${api.profile?['name'] ?? ''}',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ),
-          FilledButton.icon(
-            onPressed: busy || uploading
-                ? null
-                : roster
-                ? (d.conflict ? review : send)
-                : d != null
-                ? () => setState(() => showRoster = true)
-                : () => prepare(),
-            icon: Icon(
-              roster
-                  ? (d.conflict ? Icons.compare_arrows : Icons.check)
-                  : d != null
-                  ? Icons.play_arrow_outlined
-                  : Icons.add,
-              size: 20,
-            ),
-            label: Text(
-              roster
-                  ? (uploading
-                        ? 'جارٍ الإرسال…'
-                        : d.conflict
-                        ? 'مراجعة الحصة قبل الإرسال'
-                        : d.locked
-                        ? 'إرسال الآن'
-                        : d.id == null
-                        ? 'إنهاء الحصة وإرسالها'
-                        : 'إنهاء وإرسال التعديلات')
-                  : d != null
-                  ? 'متابعة الحصة الحالية'
-                  : 'إنشاء حصة',
-            ),
-          ),
-        ],
+  Widget sessionAction() {
+    final d = draft!;
+    return SizedBox(
+      width: double.infinity,
+      child: FilledButton.icon(
+        onPressed: busy || uploading
+            ? null
+            : d.conflict
+            ? review
+            : send,
+        icon: Icon(d.conflict ? Icons.compare_arrows : Icons.check, size: 20),
+        label: Text(
+          uploading
+              ? 'جارٍ الإرسال…'
+              : d.conflict
+              ? 'مراجعة الحصة قبل الإرسال'
+              : d.locked
+              ? 'إرسال الآن'
+              : d.id == null
+              ? 'إنهاء الحصة وإرسالها'
+              : 'إنهاء وإرسال التعديلات',
+        ),
       ),
     );
   }
@@ -702,11 +516,6 @@ class _HomeState extends State<Home> {
   Widget profile() => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
-      const Text(
-        'حسابي',
-        style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
-      ),
-      const SizedBox(height: 20),
       Panel(
         child: Center(
           child: Column(
@@ -1018,19 +827,35 @@ class _HomeState extends State<Home> {
     },
     child: Scaffold(
       appBar: AppBar(
-        title: const Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.menu_book_outlined, color: gold),
-            SizedBox(width: 10),
-            Text(
-              'حلقة',
-              style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800),
-            ),
-          ],
-        ),
+        leading: showRoster && tab == 0
+            ? IconButton(
+                tooltip: 'الحصص',
+                onPressed: () => setState(() => showRoster = false),
+                icon: const Icon(Icons.arrow_back),
+              )
+            : null,
+        title: api.token == null
+            ? const PageIdentity('حلقة', subtitle: 'متابعة أقرب لكل طالب')
+            : tab == 1
+            ? const PageIdentity('حسابي')
+            : showRoster && draft != null
+            ? PageIdentity(
+                groupName(draft!),
+                subtitle:
+                    '${dateLabel(context, draft!.payload['timestamp'])} · ${timeLabel(context, draft!.payload['timestamp'])}',
+              )
+            : PageIdentity(
+                'الحصص',
+                subtitle: 'أهلًا ${api.profile?['name'] ?? ''}',
+              ),
         actions: [
-          if (api.token != null)
+          if (api.token != null && tab == 0 && showRoster && draft != null)
+            IconButton(
+              tooltip: 'تعديل الحصة',
+              onPressed: busy || draft!.locked ? null : editMetadata,
+              icon: const Icon(Icons.edit_outlined, size: 22),
+            ),
+          if (api.token != null && tab == 0 && !showRoster)
             IconButton(
               tooltip: 'تحديث الحصص',
               onPressed: busy || uploading ? null : () => run(load),
@@ -1040,22 +865,57 @@ class _HomeState extends State<Home> {
       ),
       bottomNavigationBar: api.token == null
           ? null
-          : NavigationBar(
-              selectedIndex: tab,
-              onDestinationSelected: (v) => setState(() {
-                tab = v;
-                if (v == 0) showRoster = false;
-              }),
-              destinations: const [
-                NavigationDestination(
-                  icon: Icon(Icons.home_outlined),
-                  label: 'الحصص',
-                ),
-                NavigationDestination(
-                  icon: Icon(Icons.person_outline),
-                  label: 'حسابي',
-                ),
-              ],
+          : showRoster && tab == 0 && draft != null
+          ? ActionDock(child: sessionAction())
+          : ColoredBox(
+              color: Theme.of(context).colorScheme.surface,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (tab == 0)
+                    ActionDock(
+                      safeBottom: false,
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: FilledButton.icon(
+                          onPressed: busy || uploading
+                              ? null
+                              : draft == null
+                              ? () => prepare()
+                              : () => setState(() => showRoster = true),
+                          icon: Icon(
+                            draft == null
+                                ? Icons.add
+                                : Icons.play_arrow_outlined,
+                            size: 20,
+                          ),
+                          label: Text(
+                            draft == null
+                                ? 'إنشاء حصة'
+                                : 'متابعة الحصة الحالية',
+                          ),
+                        ),
+                      ),
+                    ),
+                  NavigationBar(
+                    selectedIndex: tab,
+                    onDestinationSelected: (v) => setState(() {
+                      tab = v;
+                      showRoster = false;
+                    }),
+                    destinations: const [
+                      NavigationDestination(
+                        icon: Icon(Icons.home_outlined),
+                        label: 'الحصص',
+                      ),
+                      NavigationDestination(
+                        icon: Icon(Icons.person_outline),
+                        label: 'حسابي',
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
       body: SafeArea(
         child: Align(
@@ -1066,7 +926,6 @@ class _HomeState extends State<Home> {
               children: [
                 if (busy || uploading)
                   const LinearProgressIndicator(minHeight: 2),
-                if (api.token != null && tab == 0) toolbar(),
                 const Divider(height: 1),
                 Expanded(
                   child: ListView(

@@ -170,9 +170,15 @@ class _WorksheetState extends State<Worksheet> {
     final key = '${student['student_id']}-${assignment['id']}';
     final disabled = locked || a?['assignment_archived'] == true;
     final history = rows(assignment['assessments']);
-    return Card(
+    return Container(
+      decoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+        ),
+      ),
+      margin: const EdgeInsets.only(bottom: 8),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.symmetric(vertical: 12),
         child: Column(
           children: [
             Row(
@@ -403,174 +409,181 @@ class _WorksheetState extends State<Worksheet> {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('طلاب الحصة'),
-          actions: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(
+          leading: IconButton(
+            tooltip: 'طلاب الحصة',
+            onPressed: () async {
+              if (await discardComposer() && context.mounted) {
+                Navigator.pop(context);
+              }
+            },
+            icon: const Icon(Icons.arrow_back),
+          ),
+          title: PageIdentity(
+            student['name'],
+            subtitle:
                 'الطالب ${position + 1} من ${widget.draft.students.length}',
-                style: const TextStyle(fontSize: 12),
+          ),
+          actions: [
+            if (widget.editSession != null)
+              IconButton(
+                tooltip: 'تعديل الحصة',
+                onPressed: locked
+                    ? null
+                    : () async {
+                        if (await discardComposer()) {
+                          await widget.editSession!();
+                          if (mounted) setState(() {});
+                        }
+                      },
+                icon: const Icon(Icons.edit_outlined, size: 22),
               ),
-            ),
           ],
+        ),
+        bottomNavigationBar: ActionDock(
+          keyboardAware: true,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (!canFinish &&
+                  !locked &&
+                  MediaQuery.viewInsetsOf(context).bottom == 0)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Text(
+                    composer
+                        ? 'أضف الواجب المفتوح أو تخلّ عنه أولًا.'
+                        : visible.isEmpty
+                        ? 'أضف واجبًا جديدًا لإنهاء الطالب.'
+                        : 'أدخل علامة رقمية لتقييم واحد على الأقل.',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ),
+              Row(
+                children: [
+                  IconButton(
+                    tooltip: '→ السابق',
+                    onPressed: position == 0 ? null : () => step(-1),
+                    icon: const Icon(Icons.arrow_back),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: FilledButton.icon(
+                      onPressed: canFinish ? finish : null,
+                      icon: const Icon(Icons.check, size: 18),
+                      label: const Text('إنهاء الطالب'),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    tooltip: 'التالي ←',
+                    onPressed: position == widget.draft.students.length - 1
+                        ? null
+                        : () => step(1),
+                    icon: const Icon(Icons.arrow_forward),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
         body: SafeArea(
           child: Align(
             alignment: Alignment.topCenter,
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 1100),
-              child: Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
+              child: SingleChildScrollView(
+                key: ValueKey(student['student_id']),
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
                       children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                student['name'],
-                                style: const TextStyle(
-                                  fontSize: 24,
+                        Expanded(
+                          child: Text(
+                            dateLabel(
+                              context,
+                              widget.draft.payload['timestamp'],
+                            ),
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ),
+                        StatusPill(
+                          student['evaluated_at'] == null
+                              ? 'لم يُقيَّم بعد'
+                              : 'تم التسجيل',
+                          pending: student['evaluated_at'] == null,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    LinearProgressIndicator(
+                      value: (position + 1) / widget.draft.students.length,
+                      minHeight: 3,
+                    ),
+                    const SizedBox(height: 20),
+                    if (locked) const Text('نسخة للقراءة فقط'),
+                    if (error != null)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Text(
+                          error!,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.error,
+                          ),
+                        ),
+                      ),
+                    LayoutBuilder(
+                      builder: (c, size) {
+                        final evaluations = Panel(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              const Text(
+                                'تقييم اليوم',
+                                style: TextStyle(
+                                  fontSize: 19,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
-                            ),
-                            if (student['evaluated_at'] != null)
-                              const StatusPill('تم التسجيل'),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        Row(
-                          children: [
-                            OutlinedButton(
-                              onPressed: locked || widget.editSession == null
-                                  ? null
-                                  : () async {
-                                      if (await discardComposer()) {
-                                        await widget.editSession!();
-                                        if (mounted) setState(() {});
-                                      }
-                                    },
-                              child: const Text('تعديل الحصة'),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: FilledButton.icon(
-                                onPressed: canFinish ? finish : null,
-                                icon: const Icon(Icons.check, size: 18),
-                                label: const Text('إنهاء الطالب'),
-                              ),
-                            ),
-                          ],
-                        ),
-                        if (!canFinish && !locked)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 6),
-                            child: Text(
-                              visible.isEmpty
-                                  ? 'أضف واجبًا جديدًا لإتاحة إنهاء الطالب.'
-                                  : 'أدخل علامة لتقييم واحد على الأقل لإتاحة إنهاء الطالب.',
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                  const Divider(height: 1),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      key: ValueKey(student['student_id']),
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          if (locked) const Text('نسخة للقراءة فقط'),
-                          if (error != null)
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 12),
-                              child: Text(
-                                error!,
-                                style: TextStyle(
-                                  color: Theme.of(context).colorScheme.error,
+                              const SizedBox(height: 12),
+                              if (visible.isEmpty)
+                                const Text(
+                                  'لا توجد واجبات سابقة للتسميع. يمكنك إضافة واجب جديد ثم إنهاء الطالب.',
                                 ),
-                              ),
-                            ),
-                          LayoutBuilder(
-                            builder: (c, size) {
-                              final evaluations = Panel(
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
-                                  children: [
-                                    const Text(
-                                      'تقييم اليوم',
-                                      style: TextStyle(
-                                        fontSize: 19,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 12),
-                                    if (visible.isEmpty)
-                                      const Text(
-                                        'لا توجد واجبات سابقة للتسميع. يمكنك إضافة واجب جديد ثم إنهاء الطالب.',
-                                      ),
-                                    for (final a in visible) assessment(a),
-                                    for (final a in attempts.where(
-                                      (a) => !assignments.any(
-                                        (x) =>
-                                            x['id'] == a['quran_assignment_id'],
-                                      ),
-                                    ))
-                                      ListTile(
-                                        title: const Text('واجب مؤرشف'),
-                                        subtitle: Text(
-                                          'العلامة ${a['grade']} · ${a['comment'] ?? ''}',
-                                        ),
-                                      ),
-                                  ],
+                              for (final a in visible) assessment(a),
+                              for (final a in attempts.where(
+                                (a) => !assignments.any(
+                                  (x) => x['id'] == a['quran_assignment_id'],
                                 ),
-                              );
-                              if (size.maxWidth < 760) {
-                                return Column(
-                                  children: [evaluations, nextAssignments()],
-                                );
-                              }
-                              return Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Expanded(child: evaluations),
-                                  const SizedBox(width: 20),
-                                  Expanded(child: nextAssignments()),
-                                ],
-                              );
-                            },
-                          ),
-                          const SizedBox(height: 12),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              OutlinedButton(
-                                onPressed: position == 0
-                                    ? null
-                                    : () => step(-1),
-                                child: const Text('→ السابق'),
-                              ),
-                              OutlinedButton(
-                                onPressed:
-                                    position == widget.draft.students.length - 1
-                                    ? null
-                                    : () => step(1),
-                                child: const Text('التالي ←'),
-                              ),
+                              ))
+                                ListTile(
+                                  title: const Text('واجب مؤرشف'),
+                                  subtitle: Text(
+                                    'العلامة ${a['grade']} · ${a['comment'] ?? ''}',
+                                  ),
+                                ),
                             ],
                           ),
-                        ],
-                      ),
+                        );
+                        if (size.maxWidth < 760) {
+                          return Column(
+                            children: [evaluations, nextAssignments()],
+                          );
+                        }
+                        return Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(child: evaluations),
+                            const SizedBox(width: 20),
+                            Expanded(child: nextAssignments()),
+                          ],
+                        );
+                      },
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

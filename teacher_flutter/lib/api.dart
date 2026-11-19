@@ -1,4 +1,7 @@
+import 'dart:async';
 import 'dart:convert';
+
+import 'package:flutter/foundation.dart';
 
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -13,11 +16,18 @@ class ApiError implements Exception {
   String toString() => message;
 }
 
+class NetworkError implements Exception {
+  @override
+  String toString() => 'تعذر الاتصال بالخادم. تحقق من الاتصال وحاول مجددًا.';
+}
+
 class TeacherApi {
-  static const base = String.fromEnvironment(
-    'API_URL',
-    defaultValue: 'http://localhost/api',
-  );
+  static const configuredBase = String.fromEnvironment('API_URL');
+  static String get base => configuredBase.isNotEmpty
+      ? configuredBase
+      : !kIsWeb && defaultTargetPlatform == TargetPlatform.android
+      ? 'http://10.0.2.2/api'
+      : 'http://localhost/api';
   static const authKey = 'halaka-teacher-auth';
   final http.Client client;
   String? token;
@@ -49,9 +59,15 @@ class TeacherApi {
       if (token != null) 'Authorization': 'Bearer $token',
     });
     if (body != null) request.body = jsonEncode(body);
-    final response = await http.Response.fromStream(
-      await client.send(request).timeout(const Duration(seconds: 25)),
-    );
+    final http.Response response;
+    try {
+      response = await http.Response.fromStream(await client.send(request))
+          .timeout(const Duration(seconds: 25));
+    } on http.ClientException {
+      throw NetworkError();
+    } on TimeoutException {
+      throw NetworkError();
+    }
     Json data;
     try {
       data = Map<String, dynamic>.from(jsonDecode(response.body));

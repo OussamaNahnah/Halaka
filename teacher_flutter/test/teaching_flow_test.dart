@@ -189,8 +189,8 @@ void main() {
       await tester.tap(find.text('واجب جديد'));
       await tester.pumpAndSettle();
       await tester.enterText(find.widgetWithText(TextField, 'إلى الآية'), '5');
-      await tester.ensureVisible(find.text('التالي ←'));
-      await tester.tap(find.text('التالي ←'));
+      await tester.ensureVisible(find.byTooltip('التالي ←'));
+      await tester.tap(find.byTooltip('التالي ←'));
       await tester.pumpAndSettle();
       expect(find.text('الواجب لم يُضف بعد'), findsOneWidget);
       await tester.tap(find.text('متابعة الإدخال'));
@@ -202,7 +202,7 @@ void main() {
     },
   );
 
-  for (final width in [390.0, 1024.0]) {
+  for (final width in [320.0, 390.0, 1024.0]) {
     testWidgets('worksheet retains grades across navigation at width $width', (
       tester,
     ) async {
@@ -253,14 +253,19 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
+      if (width == 320) {
+        tester.view.viewInsets = const FakeViewPadding(bottom: 280);
+        addTearDown(tester.view.resetViewInsets);
+        await tester.pumpAndSettle();
+      }
       await tester.enterText(find.byType(TextFormField).first, '8.125');
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.text('التالي ←'));
-      await tester.tap(find.text('التالي ←'));
+      await tester.ensureVisible(find.byTooltip('التالي ←'));
+      await tester.tap(find.byTooltip('التالي ←'));
       await tester.pumpAndSettle();
       expect(find.text('طالب 2'), findsOneWidget);
-      await tester.ensureVisible(find.text('→ السابق'));
-      await tester.tap(find.text('→ السابق'));
+      await tester.ensureVisible(find.byTooltip('→ السابق'));
+      await tester.tap(find.byTooltip('→ السابق'));
       await tester.pumpAndSettle();
       expect(find.text('8.125'), findsOneWidget);
       expect(students.first['evaluated_at'], isNull);

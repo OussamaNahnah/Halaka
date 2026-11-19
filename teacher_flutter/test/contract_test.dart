@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -9,6 +11,29 @@ import 'package:teacher_flutter/draft.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  test('Android default reaches Sail on the host', () {
+    debugDefaultTargetPlatformOverride = TargetPlatform.android;
+    addTearDown(() => debugDefaultTargetPlatformOverride = null);
+    expect(TeacherApi.base, 'http://10.0.2.2/api');
+  });
+  test('connection errors are readable and remain retryable', () async {
+    final api = TeacherApi(
+      client: MockClient(
+        (_) async =>
+            throw http.ClientException('SocketException localhost refused'),
+      ),
+    );
+    await expectLater(
+      api.request('GET', '/profile'),
+      throwsA(
+        isA<NetworkError>().having(
+          (e) => e.toString(),
+          'message',
+          isNot(contains('SocketException')),
+        ),
+      ),
+    );
+  });
   test(
     'only authentication is persisted and logout revokes bearer token',
     () async {

@@ -62,6 +62,9 @@ ThemeData halakaTheme(Brightness brightness) {
       ),
     ),
     navigationBarTheme: NavigationBarThemeData(
+      height: 64,
+      elevation: 0,
+      surfaceTintColor: Colors.transparent,
       backgroundColor: surface,
       indicatorColor: dark ? const Color(0xff263d32) : const Color(0xffedf3ed),
     ),
@@ -114,4 +117,71 @@ String timeLabel(BuildContext context, dynamic value) {
       ? ''
       : MaterialLocalizations.of(context)
             .formatTimeOfDay(TimeOfDay.fromDateTime(date));
+}
+
+/// One primary action, separated from scrollable content and system gestures.
+class ActionDock extends StatelessWidget {
+  final Widget child;
+  final bool keyboardAware;
+  final bool safeBottom;
+  const ActionDock({
+    super.key,
+    required this.child,
+    this.keyboardAware = false,
+    this.safeBottom = true,
+  });
+  @override
+  Widget build(BuildContext context) => AnimatedPadding(
+    duration: const Duration(milliseconds: 150),
+    padding: EdgeInsets.only(
+      bottom: keyboardAware ? MediaQuery.viewInsetsOf(context).bottom : 0,
+    ),
+    child: DecoratedBox(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        border: Border(
+          top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+        ),
+      ),
+      child: SafeArea(
+        top: false,
+        bottom: safeBottom,
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(16, 10, 16, safeBottom ? 10 : 4),
+          child: Center(
+            heightFactor: 1,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 600),
+              child: child,
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+class PageIdentity extends StatelessWidget {
+  final String title;
+  final String? subtitle;
+  const PageIdentity(this.title, {super.key, this.subtitle});
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        title,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+      ),
+      if (subtitle != null)
+        Text(
+          subtitle!,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+    ],
+  );
 }
