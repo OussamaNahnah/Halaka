@@ -53,7 +53,7 @@ class AdminFullPermissionsTest extends TestCase
         $student->groups()->attach($group);
         $session = $teacher->sessions()->create(['timestamp' => now(), 'group_id' => $group->id]);
         $roster = $session->studentSessions()->create(['student_id' => $student->id]);
-        $assignment = $student->assignments()->create(['surah_name' => 'Al-Mulk', 'from_ayah' => 1, 'to_ayah' => 10, 'type' => 'new_memorization']);
+        $assignment = $student->assignments()->create(['surah_name' => 'الملك', 'from_ayah' => 1, 'to_ayah' => 10, 'type' => 'new_memorization']);
         $assessment = $roster->assessments()->create(['quran_assignment_id' => $assignment->id, 'grade' => 7.25, 'comment' => 'Preserve history']);
 
         return compact('teacher', 'group', 'student', 'session', 'roster', 'assignment', 'assessment');
@@ -100,19 +100,19 @@ class AdminFullPermissionsTest extends TestCase
     {
         extract($this->records());
         $component = Livewire::test(AssignmentsRelationManager::class, ['ownerRecord' => $student, 'pageClass' => ViewStudent::class]);
-        $component->callAction(TestAction::make('create')->table(), data: ['surah_name' => 'An-Nas', 'from_ayah' => 1, 'to_ayah' => 6, 'type' => 'revision', 'is_passed' => false])->assertHasNoActionErrors();
+        $component->callAction(TestAction::make('create')->table(), data: ['surah_name' => 'الناس', 'from_ayah' => 1, 'to_ayah' => 6, 'type' => 'revision', 'is_passed' => false])->assertHasNoActionErrors();
         $this->assertSame(2, $student->assignments()->count());
-        $component->callAction(TestAction::make('edit')->table($assignment), data: ['surah_name' => 'Al-Mulk', 'from_ayah' => 2, 'to_ayah' => 8, 'type' => 'revision', 'is_passed' => true])->assertHasNoActionErrors();
+        $component->callAction(TestAction::make('edit')->table($assignment), data: ['surah_name' => 'الملك', 'from_ayah' => 2, 'to_ayah' => 8, 'type' => 'revision', 'is_passed' => true])->assertHasNoActionErrors();
         $this->assertTrue($assignment->fresh()->is_passed);
         $this->assertSame(2, $assignment->fresh()->from_ayah);
         $this->assertEquals(7.25, $assessment->fresh()->grade);
     }
 
-    public function test_assignment_forms_reject_out_of_surah_ranges(): void
+    public function test_assignment_forms_reject_reversed_ranges(): void
     {
         extract($this->records());
         Livewire::test(AssignmentsRelationManager::class, ['ownerRecord' => $student, 'pageClass' => ViewStudent::class])
-            ->callAction(TestAction::make('create')->table(), data: ['surah_name' => 'An-Nas', 'from_ayah' => 1, 'to_ayah' => 7, 'type' => 'revision', 'is_passed' => false])
+            ->callAction(TestAction::make('create')->table(), data: ['surah_name' => 'الناس', 'from_ayah' => 8, 'to_ayah' => 7, 'type' => 'revision', 'is_passed' => false])
             ->assertHasActionErrors(['to_ayah']);
         $this->assertSame(1, QuranAssignment::count());
     }
@@ -134,7 +134,7 @@ class AdminFullPermissionsTest extends TestCase
     {
         extract($this->records());
         $other = Student::create(['name' => 'Other']);
-        $otherAssignment = $other->assignments()->create(['surah_name' => 'An-Nas', 'from_ayah' => 1, 'to_ayah' => 6, 'type' => 'revision']);
+        $otherAssignment = $other->assignments()->create(['surah_name' => 'الناس', 'from_ayah' => 1, 'to_ayah' => 6, 'type' => 'revision']);
         Livewire::test(AssessmentsRelationManager::class, ['ownerRecord' => $session, 'pageClass' => ViewTeachingSession::class])
             ->callAction(TestAction::make('create')->table(), data: ['student_session_id' => $roster->id, 'quran_assignment_id' => $otherAssignment->id, 'grade' => 8])
             ->assertHasActionErrors(['quran_assignment_id']);
@@ -232,5 +232,13 @@ class AdminFullPermissionsTest extends TestCase
             ->assertFormSet(['students' => [$student->id]])
             ->fillForm(['name' => 'Updated group'])->call('save')->assertHasNoFormErrors();
         $this->assertDatabaseHas('group_student', ['group_id' => $group->id, 'student_id' => $student->id]);
+    }
+
+    public function test_admin_can_save_a_range_above_catalog_verse_count(): void
+    {
+        extract($this->records());
+        Livewire::test(AssignmentsRelationManager::class, ['ownerRecord' => $student, 'pageClass' => ViewStudent::class])
+            ->callAction(TestAction::make('create')->table(), data: ['surah_name' => 'الناس', 'from_ayah' => 1, 'to_ayah' => 100, 'type' => 'revision', 'is_passed' => false])->assertHasNoActionErrors();
+        $this->assertDatabaseHas('quran_assignments', ['student_id' => $student->id, 'surah_name' => 'الناس', 'to_ayah' => 100]);
     }
 }

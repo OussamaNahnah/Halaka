@@ -19,7 +19,7 @@ Choose **جرّب دون تسجيل**, or enter any correctly formatted email an
 
 - Arabic is the default interface language, with right-to-left layout and Arabic date formatting. Internal enum values and saved surah identifiers remain unchanged for compatibility; responsive phone and desktop layouts, labeled forms, keyboard focus, and tab arrow-key navigation.
 - Sample groups and students are fixed. The dropdown selects the group; Next loads its members. A group is required. Students left unchanged remain absent. Students with saved attendance, assignments, or assessments cannot be removed from that session.
-- A sample catalog of seven surahs validates each passage's ayah range.
+- The complete 114-surah Arabic catalog supplies names and reference counts. Ayah numbers must be positive integers in order; catalog counts do not impose a maximum. New selections save Arabic names; the previous seven English names are normalized when existing demo data loads.
 - Planned MVP grades are numeric 0–10 inclusive, with decimals allowed and no default zero for unassessed work. Prototype input validation still needs to be aligned with this confirmed scale.
 - Repeats link to the assessment that prompted them and keep separate grades. Only assignments from earlier sessions appear for assessment. One editable assessment per assignment per session is used in this prototype.
 - Deleting a session removes its demo records and assessments of its removed assignments; surviving repeat assignments lose links to deleted assessments. This is a prototype cleanup rule, not a proposed production data-retention policy.

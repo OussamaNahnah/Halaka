@@ -1,6 +1,6 @@
 # Halaka — MVP
 
-One Laravel application for Quran-school administration and teacher session recording. **Current status: Laravel/Sail in `backend/` with local MySQL database `halaka`, plus a teacher HTML prototype. Domain models and migrations implement the latest student-owned assignment design with `is_passed`. Filament 5 login/dashboard and administrator-only access are installed; full administrator management is implemented, including nested attendance/assignment/assessment editors and soft deletion/restoration. Teacher/API/offline functionality remains planned.**
+One Laravel application for Quran-school administration and teacher session recording. **Current status: Laravel/Sail in `backend/` with local MySQL database `halaka`, plus a teacher HTML prototype. Domain models and migrations implement the latest student-owned assignment design with `is_passed`. Filament 5 login/dashboard and administrator-only access are installed; full administrator management is implemented, including nested attendance/assignment/assessment editors and soft deletion/restoration. Teacher API/JWT and atomic versioned submissions are implemented; the separate Vue/TypeScript teacher web app with profile/JWT persistence, memory-only school work, automatic retry while open and conflict review is implemented.**
 
 ## Delivery 1 — build first, after plan review
 
@@ -19,18 +19,18 @@ Arabic RTL, Halaka wordmark, Tajawal, forest-green/gold branding, standard Filam
 
 Read the [Laravel implementation plan](laravel-plan.md) for migrations, relationships, Filament resources, policies, actions, tests, and review points. **The user approved the administration resources. Later teacher delivery still requires its own review.**
 
-## Delivery 2 — teacher application, planned later
+## Delivery 2 — teacher backend and PWA implemented
 
-Follow the [teacher application plan](teacher-plan.md); the teacher prototype remains the interaction reference. Implement this only after the first delivery and approval of that plan.
+Follow the [teacher application plan](teacher-plan.md); the teacher prototype remains the interaction reference. The user approved the API/JWT backend and separate Vue/TypeScript PWA organization. Follow the [API contract](teacher-api.md) for implemented server behavior; the [teacher PWA](../teacher-app/README.md) implements the browser features.
 
 - Sign in; select date/time and group; load its students; create and edit sessions without deleting them.
 - One student worksheet: assess previously assigned passages, assign several next-session passages, and finish the student. Support both `new_memorization` and `revision`, optional comments, teacher-selected pending/passed status, repeated attempts on the same assignment, and separate assignments for smaller passages.
 - Finishing a student sets `evaluated_at` and marks them present. On session completion, confirm the unfinished student list and mark those students absent. Missing grades do not become zero.
-- Cache the interface/assets and classroom data after an initial online preparation. Save work durably in IndexedDB; support offline cold reopening.
+- Persist only profile/JWT. Fetch classroom data online and hold work in page memory. Remove legacy IndexedDB and offline caches; unsent work is lost on refresh/close.
 - Finish and explicitly send the entire session; keep pending submissions during poor connectivity and offer Retry. Distinguish session completion from upload state, prevent duplicate submissions, and reject stale updates without losing local edits.
 - Use a small teacher API inside Laravel. The previously agreed JWT requirement is retained for that future API: no `exp` or refresh-token flow, with server-side logout invalidation. No API/JWT code is part of Delivery 1.
 
-Offline teacher operation remains required before the **full MVP** is complete. Completing the Filament foundation alone is the first milestone, not the whole product.
+The current user decision removes persistent offline school storage. Completing the Filament foundation alone is the first milestone, not the whole product.
 
 ## Shared rules
 
@@ -51,4 +51,4 @@ Parent/student login and screens, Telegram and notifications, native apps/instal
 
 **Delivery 1:** administrator-only panel access; atomic administrator/teacher account creation and password reset; self-deletion protection; student/group management; linked session/student/assignment/assessment views; correct Pending/Passed display; full authorized management of attendance, assignments and assessments; soft-delete/restore without losing linked history. All relevant validation/policy/relationship tests pass.
 
-**Full MVP:** teacher completes a real class, closes/reopens the prepared interface offline without losing work, reconnects and submits exactly once, then sees accepted data. Corrections are reflected consistently and stale submissions cannot undo them. No real passwords are stored in browser drafts.
+**Full MVP:** teacher completes a real class, sends it while the page remains open, retries transient failures without duplicates, then sees accepted server data. Corrections are reflected consistently and stale submissions cannot undo them. No real passwords are stored in browser drafts.

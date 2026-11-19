@@ -52,7 +52,7 @@ class AdminResourcesTest extends TestCase
         $group->students()->attach($student);
         $session = $teacher->sessions()->create(['group_id' => $group->id, 'timestamp' => now(), 'status' => 'completed']);
         $roster = $session->studentSessions()->create(['student_id' => $student->id, 'attendance_status' => 'present', 'evaluated_at' => now()]);
-        $assignment = $student->assignments()->create(['surah_name' => 'Al-Mulk', 'from_ayah' => 1, 'to_ayah' => 10, 'type' => 'new_memorization']);
+        $assignment = $student->assignments()->create(['surah_name' => 'الملك', 'from_ayah' => 1, 'to_ayah' => 10, 'type' => 'new_memorization']);
         $assessment = $roster->assessments()->create(['quran_assignment_id' => $assignment->id, 'grade' => 0, 'comment' => 'First attempt']);
 
         return compact('teacher', 'group', 'student', 'session', 'roster', 'assignment', 'assessment');

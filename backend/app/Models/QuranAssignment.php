@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Support\QuranCatalog;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -14,6 +16,11 @@ class QuranAssignment extends Model
     use SoftDeletes;
 
     protected $attributes = ['is_passed' => false];
+
+    protected function surahName(): Attribute
+    {
+        return Attribute::make(set: fn (string $value) => QuranCatalog::arabicName($value) ?? $value);
+    }
 
     protected function casts(): array
     {

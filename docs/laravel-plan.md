@@ -1,6 +1,6 @@
 # Laravel + Filament implementation plan
 
-**Status: the user installed Laravel and Sail in `backend/`. Local development uses MySQL with database `halaka`. The domain models and migrations were rebuilt for student-owned assignments with boolean `is_passed`, including both pivot tables. Filament 5.11.3 login/dashboard, administrator-only access, RoleSeeder, and development/test AdminUserSeeder are implemented. The administrator-account resource, four school resources, and nested full-management forms are implemented, with soft deletion/restoration for school records, validated assignment ranges and same-student assessment links. Teacher/API submission validation and demo school data remain planned.**
+**Status: the user installed Laravel and Sail in `backend/`. Local development uses MySQL with database `halaka`. The domain models and migrations were rebuilt for student-owned assignments with boolean `is_passed`, including both pivot tables. Filament 5.11.3 login/dashboard, administrator-only access, RoleSeeder, and development/test AdminUserSeeder are implemented. The administrator-account resource, four school resources, and nested full-management forms are implemented, with soft deletion/restoration for school records, validated assignment ranges and same-student assessment links. Delivery 2 teacher API/JWT and submission validation are now implemented under [teacher-plan.md](teacher-plan.md) and [teacher-api.md](teacher-api.md); demo school data remains optional.**
 
 This is the technical delivery plan. [MVP](mvp.md) owns scope; [class diagram](class-diagram.md) owns domain fields and constraints.
 
@@ -117,7 +117,7 @@ The five top-level resources use standard Filament forms, tables, relationship m
 - Students have generated IDs, names, optional shared parent-phone numbers, and searchable group membership controls. Groups have names and student membership controls.
 - Both forms update the same unique pivot transactionally. Include existing archived membership targets in selectors to avoid silently detaching them when saving.
 - Student detail tabs provide session/attendance history, assignments, and assessments. Pending/Passed uses `is_passed`, independently of attempts or grades.
-- Create/edit assignments in the student tab: complete local Quran catalog, valid surah/range/type, and explicit passing toggle. Retain all assessment attempts when changing assignment metadata.
+- Create/edit assignments in the student tab: complete local Quran catalog, valid surah/type and positive ordered ayah numbers, and explicit passing toggle. Retain all assessment attempts when changing assignment metadata.
 - Soft-delete/restore students, groups, assignments, and individual attempts without cascading changes to linked records.
 
 ### Sessions and attendance

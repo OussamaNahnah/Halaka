@@ -15,7 +15,7 @@ class Group extends Model
 
     public function students(): BelongsToMany
     {
-        return $this->belongsToMany(Student::class)->withTimestamps();
+        return $this->belongsToMany(Student::class)->using(GroupStudent::class)->withTimestamps();
     }
 
     public function sessions(): HasMany

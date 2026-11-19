@@ -22,7 +22,7 @@ class Student extends Model
 
     public function groups(): BelongsToMany
     {
-        return $this->belongsToMany(Group::class)->withTimestamps();
+        return $this->belongsToMany(Group::class)->using(GroupStudent::class)->withTimestamps();
     }
 
     public function studentSessions(): HasMany

@@ -45,7 +45,7 @@ class TeachingResourcesTest extends TestCase
         $student = Student::create(['name' => 'Yusuf']);
         $session = $teacher->sessions()->create(['timestamp' => now()]);
         $roster = $session->studentSessions()->create(['student_id' => $student->id]);
-        $assignment = $student->assignments()->create(['surah_name' => 'An-Nas', 'from_ayah' => 1, 'to_ayah' => 6, 'type' => 'revision']);
+        $assignment = $student->assignments()->create(['surah_name' => 'الناس', 'from_ayah' => 1, 'to_ayah' => 6, 'type' => 'revision']);
         $assessment = $roster->assessments()->create(['quran_assignment_id' => $assignment->id, 'grade' => 8.125]);
 
         return compact('teacher', 'student', 'session', 'roster', 'assignment', 'assessment');
@@ -83,7 +83,7 @@ class TeachingResourcesTest extends TestCase
     public function test_assignments_can_be_created_edited_and_student_history_cannot_be_mismatched(): void
     {
         extract($this->records());
-        Livewire::test(CreateQuranAssignment::class)->fillForm(['student_id' => $student->id, 'surah_name' => 'An-Nas', 'from_ayah' => 1, 'to_ayah' => 3, 'type' => 'revision', 'is_passed' => false])->call('create')->assertHasNoFormErrors();
+        Livewire::test(CreateQuranAssignment::class)->fillForm(['student_id' => $student->id, 'surah_name' => 'الناس', 'from_ayah' => 1, 'to_ayah' => 3, 'type' => 'revision', 'is_passed' => false])->call('create')->assertHasNoFormErrors();
         $created = QuranAssignment::latest('id')->firstOrFail();
         $other = Student::create(['name' => 'Maryam']);
         Livewire::test(EditQuranAssignment::class, ['record' => $created->id])->fillForm(['student_id' => $other->id, 'is_passed' => true])->call('save')->assertHasNoFormErrors();
@@ -102,7 +102,7 @@ class TeachingResourcesTest extends TestCase
         Livewire::test(EditQuranAssessment::class, ['record' => $created->id])->fillForm(['grade' => 120])->call('save')->assertHasNoFormErrors();
         $this->assertEquals(120, $created->fresh()->grade);
         $other = Student::create(['name' => 'Maryam']);
-        $wrong = $other->assignments()->create(['surah_name' => 'An-Nas', 'from_ayah' => 1, 'to_ayah' => 6, 'type' => 'revision']);
+        $wrong = $other->assignments()->create(['surah_name' => 'الناس', 'from_ayah' => 1, 'to_ayah' => 6, 'type' => 'revision']);
         Livewire::test(CreateQuranAssessment::class)->fillForm(['student_session_id' => $roster->id, 'quran_assignment_id' => $wrong->id, 'grade' => 8])->call('create')->assertHasFormErrors(['quran_assignment_id']);
         $this->assertSame(2, QuranAssessment::count());
     }
@@ -119,6 +119,6 @@ class TeachingResourcesTest extends TestCase
             $this->assertNotSoftDeleted($record);
         }
         $this->assertSame($assignment->id, $assessment->fresh()->quran_assignment_id);
-        $this->assertSame($roster->id,$assessment->fresh()->student_session_id);
+        $this->assertSame($roster->id, $assessment->fresh()->student_session_id);
     }
 }

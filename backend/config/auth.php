@@ -38,6 +38,7 @@ return [
     */
 
     'guards' => [
+        'teacher_api' => ['driver' => 'jwt', 'provider' => 'users'],
         'web' => [
             'driver' => 'session',
             'provider' => 'users',

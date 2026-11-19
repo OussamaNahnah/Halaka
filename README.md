@@ -6,13 +6,14 @@ The planned application will use **Laravel (PHP)** and support teachers, adminis
 
 ## Status
 
-Laravel and Sail are installed in `backend/`, using the local MySQL database `halaka`. The Arabic teacher prototype is preserved. Domain models and migrations follow the student-owned assignment design with boolean `is_passed` and multiple assessment attempts. Filament 5 is installed with an Arabic administrator-only login and dashboard at `/admin`; administrator, teacher, student, group, session, student-session, assignment, and assessment resources are implemented.
+Laravel and Sail are installed in `backend/`, using the local MySQL database `halaka`. The Arabic teacher prototype is preserved. Domain models and migrations follow the student-owned assignment design with boolean `is_passed` and multiple assessment attempts. Filament 5 is installed with an Arabic administrator-only login and dashboard at `/admin`; administrator, teacher, student, group, session, student-session, assignment, and assessment resources are implemented. Teacher JWT API and atomic submissions are also implemented; see the API contract below.
 
 ## Project structure
 
 ```text
 Halaka/
 ├── backend/             Laravel application and Sail
+├── teacher-app/         Vue/TypeScript teacher PWA
 ├── docs/                Specifications and implementation plans
 ├── teacher-prototype/   Standalone teacher UI reference
 ├── AGENTS.md            Project instructions
@@ -43,7 +44,7 @@ Arabic RTL and Tajawal are configured with Halaka colors and standard Filament c
 
 ## MVP
 
-The first milestone is the Laravel database and Filament administration panel, with no APIs. The full MVP later adds teacher sessions, Quran assessments and assignments, local saving, and server submission. The user installed the Laravel scaffold; the models and migrations are now created; Filament login/dashboard are installed; administrator, teacher, student, group, session, student-session, assignment, and assessment resources are implemented. Parent features and Telegram are deferred. See the [MVP scope](docs/mvp.md).
+The first milestone is the Laravel database and Filament administration panel, with no APIs. The teacher web app keeps only profile/JWT persistently. School work stays in page memory until server acknowledgement; refresh/close loses unsent work. The user installed the Laravel scaffold; the models and migrations are now created; Filament login/dashboard are installed; administrator, teacher, student, group, session, student-session, assignment, and assessment resources are implemented. Parent features and Telegram are deferred. See the [MVP scope](docs/mvp.md).
 
 ## Documentation
 
@@ -53,9 +54,13 @@ Read these in order; each owns a distinct part of the specification:
 2. [Class diagram](docs/class-diagram.md) — fields, relationships, constraints, and business rules.
 3. [Laravel + Filament plan](docs/laravel-plan.md) — migrations, Eloquent relationships, resources, policies, actions, tests, and review checklist.
 
-4. [Teacher application plan](docs/teacher-plan.md) — Delivery 2 screens, offline storage, API/submission design, and tests.
+4. [Teacher application plan](docs/teacher-plan.md) — Delivery 2 screens, memory-only work, API/submission design, and tests.
 
-Project creation, models, migrations, and Filament panel installation are approved. School management resources are approved and implemented; remaining teacher/API work follows the separate delivery review. The first milestone has no APIs.
+Project creation, models, migrations, and Filament panel installation are approved. School management resources are approved and implemented; teacher API/JWT and the separate teacher web client are implemented and verified. The first milestone has no APIs.
+
+## Teacher API
+
+The 12 teacher endpoints are implemented in Laravel with JWT authentication, all-group/student reads, owned-session access, and atomic versioned submissions. See the [API contract](docs/teacher-api.md) for setup, authentication, payloads, retries, and conflicts. The separate [teacher app](teacher-app/README.md) is implemented in `teacher-app/`, with profile/JWT storage, memory-only school data, automatic retry while the page is open, and conflict review. Run `npm ci` and `npm run build` there, then open **http://localhost/teacher/** with a Teacher account created in Filament.
 
 ## Teacher prototype
 

@@ -15,10 +15,11 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use PHPOpenSourceSaver\JWTAuth\Contracts\JWTSubject;
 
 #[Fillable(['name', 'email', 'password'])]
 #[Hidden(['password', 'remember_token'])]
-class User extends Authenticatable implements FilamentUser
+class User extends Authenticatable implements FilamentUser, JWTSubject
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, SoftDeletes;
@@ -43,6 +44,21 @@ class User extends Authenticatable implements FilamentUser
                 throw new AuthorizationException('لا يمكنك حذف حسابك أثناء تسجيل الدخول به.');
             }
         });
+    }
+
+    public function getJWTIdentifier()
+    {
+        return $this->getKey();
+    }
+
+    public function getJWTCustomClaims(): array
+    {
+        return ['aud' => 'halaka-teacher', 'pwd' => $this->jwtPasswordFingerprint()];
+    }
+
+    public function jwtPasswordFingerprint(): string
+    {
+        return hash_hmac('sha256', $this->password, (string) config('jwt.secret'));
     }
 
     public function roles(): BelongsToMany

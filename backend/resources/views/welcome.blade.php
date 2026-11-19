@@ -39,7 +39,7 @@
                 <div class="eyebrow">مساحة لحلقات القرآن الكريم</div>
                 <h1 id="hero-title"><span class="headline-line">لكلّ آيةٍ خطوة،</span><span class="headline-line">ولكلّ طالبٍ <em>عناية.</em></span></h1>
                 <p class="intro">نظّم حلقات القرآن، وتابع حضور الطلاب ورحلتهم في الحفظ والمراجعة، في مكان واحد.</p>
-                <a class="cta" href="{{ route('filament.admin.pages.dashboard') }}">الدخول إلى لوحة الإدارة <span class="arrow" aria-hidden="true">←</span></a>
+                <a class="cta" href="{{ url('/teacher/') }}">الدخول إلى تطبيق الأستاذ <span class="arrow" aria-hidden="true">←</span></a>
             </div>
             <div class="art" aria-hidden="true">
                 <svg class="illustration" viewBox="0 0 480 390" fill="none" xmlns="http://www.w3.org/2000/svg">

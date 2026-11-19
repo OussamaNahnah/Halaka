@@ -3,14 +3,14 @@
 Implementation priority is defined in the [MVP scope](mvp.md). Parent features and Telegram are deferred and excluded from this class diagram.
 
 
-Delivery 1 implements the database and Filament; teacher API, JWT, and offline/synchronization behavior below belong to a later delivery. See the [Laravel plan](laravel-plan.md). Local sync metadata is not a required server table field.
+Delivery 1 implements the database and Filament. Delivery 2 now implements teacher API/JWT and versioned atomic submission; the separate teacher web client is implemented in `teacher-app/`. See the [API contract](teacher-api.md). Local sync metadata is not a server field.
 
 This file is the authoritative design reference for the Laravel school management study project. Keep the Mermaid diagram and the rules below in sync.
 
 **Implementation status:** Laravel models and migrations now follow this diagram, with student-owned assignments, `is_passed`, and full administrator CRUD using soft deletion/restoration. The standalone teacher prototype still uses the previous assignment design and remains a historical interaction reference.
 
 ## UML class diagram
-
+      
 ```mermaid
 classDiagram
 direction TB
@@ -50,6 +50,7 @@ class Session {
   timestamp timestamp
   string status
   uuid client_uuid
+  int revision
   string sync_status
   timestamp last_synced_at
   timestamp deleted_at
@@ -64,6 +65,7 @@ class StudentSession {
 }
 class QuranAssignment {
   int id
+  uuid client_uuid
   int student_id
   string surah_name
   int from_ayah
@@ -74,6 +76,7 @@ class QuranAssignment {
 }
 class QuranAssessment {
   int id
+  uuid client_uuid
   int student_session_id
   int quran_assignment_id
   float grade
@@ -96,17 +99,17 @@ QuranAssignment "1" -- "0..*" QuranAssessment : assessed through
 
 ## Business rules
 
-- Administrators create administrator and teacher accounts and assign or reset their passwords. Only `User.password_hash` is stored; passwords are never returned in user/profile responses. Filament uses Laravel session authentication; JWT is deferred to the later teacher API delivery.
+- Administrators create administrator and teacher accounts and assign or reset their passwords. Only `User.password_hash` is stored; passwords are never returned in user/profile responses. Filament uses Laravel session authentication; the teacher API uses a separate JWT guard.
 - The current roles are Administrator, Teacher, and Student. One account can have more than one role.
 - Each session has one teacher and can include several students.
-- Save the session and all student work automatically on the teacher's device from creation onward, including when offline. Creating a session does not require uploading it immediately. Required group, roster, and earlier-assignment data must already be available locally for offline use.
+- Keep current session work in page memory until submission. Persist only profile/JWT; refreshing or closing loses unsent work. Creating a session requires online classroom preparation.
 - Session completion and synchronization are separate: `status` starts as `in_progress` and becomes `completed` when the teacher selects **Finish and send session**. A completed session may still be waiting for upload.
-- A new local session has `sync_status = local_only`. Finishing queues a durable local submission (`pending_upload`); while transmitting, show `uploading`. Only a successful server acknowledgement for the submitted revision changes it to `synced`.
-- If there is no connection or an upload fails, keep the complete submission on the device as `pending_upload`. Show **Waiting to send** with **Retry**; never report success or clear local work before acknowledgement. Recover interrupted uploads as pending when the application restarts.
+- A new local session has `sync_status = local_only`. Finishing queues an in-memory submission (`pending_upload`); while transmitting, show `uploading`. Only a successful server acknowledgement for the submitted revision changes it to `synced`.
+- If there is no connection or an upload fails, keep the submission in page memory as `pending_upload` and retry while the page stays open. Never report success before acknowledgement. Refreshing/closing loses the pending submission.
 - Send the session, attendance, assignments, and assessments together. The server must authorize and validate the submission and save it atomically. Repeated sends of the same submission must not create duplicate sessions or child records; use the stable client UUID and a submission revision/idempotency key.
 - Teachers can edit saved sessions without deleting them. Administrators can create/edit sessions and soft-delete/restore them under the archive rules below. Edits to an already uploaded session are saved locally, move its sync state to `local_only`, and require another explicit finish-and-send action. Preserve the server's last accepted revision until the new revision is acknowledged. Never mark newer local edits as synced merely because an earlier upload succeeds.
 - While a session is in progress, students not yet finished display as **Not evaluated yet**. The teacher's **Finish student** action sets `evaluated_at` and marks the student `present`. On **Finish and send session**, roster students whose `evaluated_at` is null are marked `absent`; list their names for confirmation before submission.
-- Evaluation completion is explicit, not inferred from whether a grade exists. A student without earlier assignments can still be finished after reviewing their work or assigning next passages. Missing grades do not default to zero.
+- Evaluation completion is explicit, not inferred from whether a grade exists. The teacher Finish student action requires at least one valid graded assessment and all started assessments complete. If there are no previous passages to assess, adding a new next assignment is sufficient. Notes and repeat are optional. Clearing evaluation input clears its completion marker. Administrator attendance management remains independent. Missing grades do not default to zero.
 - A group has a name and can contain several students. The initial design allows a student to belong to several groups, with each student/group membership stored only once.
 - A session can optionally belong to one group, allowing sessions without a group as well. The teacher is assigned to each session.
 - `StudentSession` records remain the attendance roster for each session. Changing group membership must not change past session records.
@@ -125,10 +128,10 @@ QuranAssignment "1" -- "0..*" QuranAssessment : assessed through
 - Administrative passage edits change the shared assignment metadata shown by its assessment attempts; they do not erase earlier grade/comment records. Administrators explicitly control `is_passed`; editing a grade never changes it automatically.
 - Use soft deletion through nullable `deleted_at`. Deleting one record does not delete or archive related records or pivot memberships. Keep historical relationships readable even when their parent is archived. Restore the same row and ID; do not create replacement records. Permanent deletion is not exposed in the administrator panel.
 - Administrator accounts are Users with the Administrator role; there is no separate Administrator model/table. All active administrators have the same management privileges. A user can edit its own account but cannot delete it, directly or in a bulk operation. Archiving another administrator soft-deletes that User, retains its roles and linked records, and prevents authentication until restored.
-- Teacher profiles share User accounts: archiving a Teacher retains its User, roles, password hash, and reserved email, including any Administrator role. The future teacher application must reject archived teacher profiles. A student archive does not affect its optional User account.
+- Teacher profiles share User accounts: archiving a Teacher retains its User, roles, password hash, and reserved email, including any Administrator role. The teacher API rejects archived teacher profiles. A student archive does not affect its optional User account.
 - Administrator session creation uses an explicitly selected student roster, not an implicit rebuild from group membership. On saving a session as completed, unmarked roster entries without `evaluated_at` become absent. Later group/session edits preserve the existing roster.
 - Administrators may change attendance explicitly. Present sets `evaluated_at` to the provided timestamp or keeps/initializes it; absent or not-marked clears it. Completed sessions require present or absent, rather than not-marked.
-- No separate assessment-change model/table or audit history is required. In the future API delivery, all administrator changes, including archival/restoration, must advance the relevant revisions; stale teacher submissions must not overwrite changes or resurrect archived records.
+- No separate assessment-change model/table or audit history is required. All administrator changes, including archival/restoration, advance the shared school revision; stale teacher submissions must not overwrite changes or resurrect archived records.
 
 ## Attribute notes
 
@@ -136,9 +139,11 @@ QuranAssignment "1" -- "0..*" QuranAssessment : assessed through
 - `Session.group_id` is optional. In Laravel, use a `group_student` pivot table with a unique `(group_id, student_id)` pair for group memberships.
 - `Session.status` is required and is `in_progress` or `completed`, defaulting to `in_progress`.
 - `Session.client_uuid` is generated on the device when the session is created, stays unchanged across retries, and is unique on the server. `Session.id` remains the server primary key; local records need stable local identifiers before server IDs exist, with references reconciled on upload.
-- `Session.sync_status` is device-local metadata, not a server-controlled visibility flag. Its values are `local_only`, `pending_upload`, `uploading`, and `synced`; default to `local_only`. These fields describe the combined offline/online model; do not treat every local field as a Laravel database column.
+- `Session.revision` is a server counter starting at 1 and advancing on accepted teacher edits. Administrator/domain mutations also advance the shared school revision used for conflict checks.
+- `QuranAssignment.client_uuid` and `QuranAssessment.client_uuid` are nullable unique stable identities for client-created records; existing administrator records keep server IDs and may have no client UUID.
+- `Session.sync_status` is device-local metadata, not a server-controlled visibility flag. Its values are `local_only`, `pending_upload`, `uploading`, and `synced`; default to `local_only`. These fields describe transient client submission state; do not treat every local field as a Laravel database column.
 - `Session.last_synced_at` is nullable and records the last server acknowledgement time, not the time of local saving. It remains unchanged during unsent edits or failed retries.
-- Persist local records and queued submissions durably (for example, in IndexedDB). A local save failure must be shown separately from an upload failure; only show **Saved on device** after successful local persistence. Browser storage can be cleared or lost and is not a server backup.
+- Persist only profile/JWT in localStorage. School records, queues, preferences, and recovery copies are memory-only. Clear legacy IndexedDB and teacher caches on upgrade. Warn before refresh/close with unsent work; never show **Saved on device**.
 - `Session.timestamp` stores the session date and time in one field.
 - A teacher uses the name and email from their account. A student record has a name so it can exist without an account.
 - `Student.id` is generated by the database; administrators do not enter or edit it. There is no separate manually entered student number.
@@ -149,7 +154,8 @@ QuranAssignment "1" -- "0..*" QuranAssessment : assessed through
 - `StudentSession.id` is the primary key. Keep a unique constraint on `(student_id, session_id)` so each student has only one attendance record per session. Grades and comments belong to `QuranAssessment`, not `StudentSession`.
 - `QuranAssignment.student_id` is required and references `Student.id`. Assignments are independent of sessions; assessment attempts provide their session history.
 - `QuranAssignment.is_passed` is a required boolean, defaulting to `false`. False means pending; true means passed. Laravel casts it to boolean. It is explicitly set by the teacher or administrator, independently of session completion and grade values.
-- `QuranAssignment.surah_name`, `from_ayah`, `to_ayah`, and `type` are required. Validate the selected surah and ensure `1 <= from_ayah <= to_ayah` within that surah's ayah count. `type` must be `new_memorization` or `revision`.
+- `QuranAssignment.surah_name` stores the Arabic name from the complete 114-surah catalog; recognized legacy English input is normalized to Arabic.
+- `QuranAssignment.surah_name`, `from_ayah`, `to_ayah`, and `type` are required. Validate the selected surah and ensure `1 <= from_ayah <= to_ayah` without an upper bound from the catalog. `type` must be `new_memorization` or `revision`.
 - `QuranAssessment.student_session_id` references the session attendance record where recitation was assessed; `quran_assignment_id` references the assignment being checked. Both references are required. Validate that both records belong to the same student.
 - `QuranAssessment.grade` is required; `comment` is optional. The passage and type are obtained through `quran_assignment_id`. Require a numeric grade, with or without decimals; no fixed range or decimal-place limit. Store as a floating-point number (finite machine precision).
 
@@ -157,6 +163,10 @@ QuranAssignment "1" -- "0..*" QuranAssessment : assessed through
 
 - Confirm whether every student needs an account. The diagram currently allows a student record without one.
 - Confirm whether students can belong to several groups and whether every session must belong to a group. The initial design allows multiple memberships and optional session groups.
-- Teacher-side group roster preparation belongs to the later teacher delivery. Administrator session creation already uses explicit roster selection.
-- Decide how to resolve concurrent edits from multiple devices, including submission version checks and conflict recovery for shared assignment status as well as session attempts. Until resolved, never silently overwrite a newer server revision.
-- Decide how long to retain acknowledged local submissions, how offline data is refreshed, and whether automatic retry supplements the explicit Retry action.
+- Teacher API access is decided: all active groups/students, only owned sessions, and latest taught group suggestion. First uploads snapshot the current group roster; edits preserve the saved active roster. See the API contract.
+- Server conflict detection is implemented using a conservative school-wide revision plus session revision and durable idempotency acknowledgements. The client implements explicit conflict review and recovery backups; finer-grained revisions remain future work; never silently overwrite a newer revision.
+- Current storage policy is decided: remove acknowledged temporary work, fetch history online, and retry finished submissions only while the page is open.
+
+Teacher rule: assess each assignment once per session and edit that existing assessment as needed. Reassessment is available in a later session. Preserve historical attempts and administrator privileges; no database uniqueness constraint is added to the assessment table.
+
+The teacher worksheet uses “يحتاج إعادة” (needs repeat), unchecked by default for a new evaluation. A graded passage is explicitly submitted as passed unless repeat is selected; previously recorded repeat decisions are preserved. Untouched/unassessed assignments retain pending status, and no grade threshold determines passing.

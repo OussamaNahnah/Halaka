@@ -6,17 +6,23 @@ class QuranCatalog
 {
     public static function options(): array
     {
-        $options = collect(config('quran'))->mapWithKeys(fn (array $surah) => [$surah['identifier'] => $surah['name']])->all();
+        return collect(config('quran'))->mapWithKeys(fn (array $surah) => [$surah['name'] => $surah['name']])->all();
+    }
 
-        return $options + ['Al-Fatiha' => 'الفاتحة'];
+    public static function arabicName(string $name): ?string
+    {
+        if ($name === 'Al-Fatiha') {
+            return 'الفاتحة';
+        }
+        $surah = collect(config('quran'))->first(fn (array $surah) => in_array($name, [$surah['identifier'], $surah['name']], true));
+
+        return $surah['name'] ?? null;
     }
 
     public static function verseCount(string $name): ?int
     {
-        if ($name === 'Al-Fatiha') {
-            return 7;
-        }
-        $surah = collect(config('quran'))->first(fn (array $surah) => in_array($name, [$surah['identifier'], $surah['name']], true));
+        $arabic = self::arabicName($name);
+        $surah = collect(config('quran'))->first(fn (array $surah) => $surah['name'] === $arabic);
 
         return $surah['verses'] ?? null;
     }

@@ -23,7 +23,7 @@ class SaveAssignment
                 }
             }],
             'from_ayah' => ['required', 'integer', 'min:1'],
-            'to_ayah' => ['required', 'integer', 'gte:from_ayah', 'max:'.(QuranCatalog::verseCount($data['surah_name'] ?? '') ?? 0)],
+            'to_ayah' => ['required', 'integer', 'gte:from_ayah'],
             'type' => ['required', Rule::in(['new_memorization', 'revision'])],
             'is_passed' => ['required', 'boolean'],
         ])->validate();
