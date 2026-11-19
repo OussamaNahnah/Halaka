@@ -32,6 +32,10 @@ Follow the [teacher application plan](teacher-plan.md); the teacher prototype re
 
 The current user decision removes persistent offline school storage. Completing the Filament foundation alone is the first milestone, not the whole product.
 
+## Flutter teacher rebuild — approved
+
+The user approved a minimal Flutter teacher client using the existing Laravel API, with only profile/JWT persisted. Implementation lives in [`teacher_flutter/`](../teacher_flutter/README.md); school data, drafts and retry queues remain in process memory. Android/iOS scaffolds are present. Keep the existing Vue app available during migration; replacing its hosting route is outside this change. This approval supersedes the native-app deferral for the teacher client only.
+
 ## Shared rules
 
 The [class diagram](class-diagram.md) is the authoritative domain model.
@@ -45,7 +49,7 @@ The [class diagram](class-diagram.md) is the authoritative domain model.
 
 ## Deferred
 
-Parent/student login and screens, Telegram and notifications, native apps/install prompts, analytics/exports, automatic background synchronization, and multi-device conflict-resolution UI. Teacher/group access mapping remains unresolved; see model open decisions.
+Parent/student login and screens, Telegram and notifications, install prompts, analytics/exports, automatic background synchronization, and multi-device conflict-resolution UI. Teacher/group access mapping remains unresolved; see model open decisions.
 
 ## Acceptance by milestone
 

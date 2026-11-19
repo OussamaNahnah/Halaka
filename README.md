@@ -13,7 +13,8 @@ Laravel and Sail are installed in `backend/`, using the local MySQL database `ha
 ```text
 Halaka/
 ├── backend/             Laravel application and Sail
-├── teacher-app/         Vue/TypeScript teacher PWA
+├── teacher-app/         Existing Vue/TypeScript teacher PWA
+├── teacher_flutter/     Minimal Flutter teacher client (Android/iOS)
 ├── docs/                Specifications and implementation plans
 ├── teacher-prototype/   Standalone teacher UI reference
 ├── AGENTS.md            Project instructions
@@ -77,3 +78,7 @@ Read [AGENTS.md](AGENTS.md), then follow the documentation order above before im
 ## Contributing
 
 Contributions and feedback are welcome. Start with the documentation above to understand the design and current scope.
+
+## Flutter teacher client
+
+The teacher Flutter rebuild is implemented in [teacher_flutter/](teacher_flutter/README.md), consuming the existing Laravel APIs. Only profile/JWT persist; school work stays in process memory. The existing Vue app remains available during migration. See its README for run commands and verification limits.

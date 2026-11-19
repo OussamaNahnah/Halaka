@@ -2,6 +2,8 @@
 
 This is the implemented backend contract for Delivery 2. The endpoint list is maintained in [teacher-plan.md](teacher-plan.md#minimal-endpoint-plan). The separate [teacher PWA](../teacher-app/README.md) consumes this API and persists only profile/JWT; school work and automatic retries stay in page memory while open, with conflict review.
 
+The [Flutter teacher client](../teacher_flutter/README.md) also consumes this unchanged contract and persists only profile/JWT; all school work stays in process memory.
+
 ## Setup and authentication
 
 From `backend/`:

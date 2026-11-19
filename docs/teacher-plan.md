@@ -139,3 +139,9 @@ Teacher rule: assess each assignment once per session and edit that existing ass
 The teacher worksheet uses “يحتاج إعادة” (needs repeat), unchecked by default for a new evaluation. A graded passage is explicitly submitted as passed unless repeat is selected; previously recorded repeat decisions are preserved. Untouched/unassessed assignments retain pending status, and no grade threshold determines passing.
 
 Current connection policy: one unfinished/unacknowledged session per open application. Only profile/JWT survive refresh; all unsent work is temporary. See the frontend README.
+
+## Flutter rebuild — current user decision
+
+A minimal Flutter client is approved and implemented in [`teacher_flutter/`](../teacher_flutter/README.md), using the existing API contract and domain rules. This supersedes the Vue-only frontend requirement for the rebuild. The existing web deployment remains available. Persist only profile/JWT; classroom data, draft edits and immutable retry payloads stay in process memory. The Flutter README owns setup, implemented UI scope and verification limitations. Conflict review is intentionally manual: retain the local worksheet, inspect server data, then explicitly reopen and re-enter corrections rather than silently changing the revision.
+
+The Flutter UI now follows the existing `teacher-app/src/screens/` interactions and `teacher-app/src/style.css` branding, using the same Laravel endpoint paths. See the Flutter README for implemented behavior and test coverage.
