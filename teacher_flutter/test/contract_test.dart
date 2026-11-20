@@ -11,10 +11,10 @@ import 'package:teacher_flutter/draft.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  test('Android default reaches Sail on the host', () {
+  test('default API uses the hosted server', () {
     debugDefaultTargetPlatformOverride = TargetPlatform.android;
     addTearDown(() => debugDefaultTargetPlatformOverride = null);
-    expect(TeacherApi.base, 'http://10.0.2.2/api');
+    expect(TeacherApi.base, 'https://h.oussamanh.com/api');
   });
   test('connection errors are readable and remain retryable', () async {
     final api = TeacherApi(
@@ -35,7 +35,7 @@ void main() {
     );
   });
   test(
-    'only authentication is persisted and logout revokes bearer token',
+    'only authentication uses preferences and logout revokes bearer token',
     () async {
       SharedPreferences.setMockInitialValues({});
       final api = TeacherApi(
@@ -106,6 +106,19 @@ void main() {
         ],
         assignments: {},
       );
+      student['assignments'] = [
+        {
+          'id': 9,
+          'surah_name': 'الملك',
+          'from_ayah': 1,
+          'to_ayah': 10,
+          'type': 'revision',
+          'is_passed': false,
+          'created_in_session_id': 3,
+          'student_name': 'Student',
+          'archived': false,
+        },
+      ];
       final first = jsonEncode(draft.freeze());
       student['assessments'][0]['grade'] = 99;
       expect(jsonEncode(draft.freeze()), first);
@@ -114,6 +127,17 @@ void main() {
       expect(sent['needs_repeat'], true);
       expect(sent.containsKey('assignment_archived'), false);
       expect(sent.containsKey('is_passed'), false);
+      expect(
+        draft.pending!['students'][0]['assignments'][0].keys,
+        unorderedEquals([
+          'id',
+          'surah_name',
+          'from_ayah',
+          'to_ayah',
+          'type',
+          'is_passed',
+        ]),
+      );
       expect(draft.pending!['students'][1]['assignments'], isEmpty);
     },
   );

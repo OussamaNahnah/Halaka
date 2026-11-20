@@ -25,6 +25,7 @@ class QuranAssignment extends Model
     protected function casts(): array
     {
         return [
+            'created_in_session_id' => 'integer',
             'from_ayah' => 'integer',
             'to_ayah' => 'integer',
             'is_passed' => 'boolean',
@@ -34,6 +35,11 @@ class QuranAssignment extends Model
     public function student(): BelongsTo
     {
         return $this->belongsTo(Student::class)->withTrashed();
+    }
+
+    public function createdInSession(): BelongsTo
+    {
+        return $this->belongsTo(TeachingSession::class, 'created_in_session_id')->withTrashed();
     }
 
     public function assessments(): HasMany

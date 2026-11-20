@@ -72,7 +72,7 @@ class SubmitTeacherSession
                 $writtenAssignments = [];
                 foreach ($work['assignments'] as $i => $input) {
                     $field = "$path.assignments.$i";
-                    $assignment = $this->assignment($student, $input, $field);
+                    $assignment = $this->assignment($student, $input, $field, $session);
                     if (in_array($assignment->id, $seenAssignments, true)) {
                         $this->invalid($field, 'الواجب مكرر في الإرسال.');
                     }
@@ -143,14 +143,14 @@ class SubmitTeacherSession
             }
             $mapping['assignments'] = (object) $mapping['assignments'];
             $mapping['assessments'] = (object) $mapping['assessments'];
-            $ack = ['submission_id' => $data['submission_id'], 'data' => (new TeacherSessionResource($session->fresh()->load(['group', 'studentSessions.student', 'studentSessions.assessments.assignment'])))->resolve(), 'id_mapping' => $mapping, 'assignment_states' => array_values(array_map(fn ($assignment) => $assignment->fresh()->only(['id', 'student_id', 'client_uuid', 'is_passed']), $assignmentStates)), 'meta' => SchoolSync::meta()];
+            $ack = ['submission_id' => $data['submission_id'], 'data' => (new TeacherSessionResource($session->fresh()->load(['group', 'studentSessions.student', 'studentSessions.assessments.assignment', 'createdAssignments' => fn ($query) => $query->withTrashed()->with('student')])))->resolve(), 'id_mapping' => $mapping, 'assignment_states' => array_values(array_map(fn ($assignment) => $assignment->fresh()->only(['id', 'student_id', 'client_uuid', 'is_passed']), $assignmentStates)), 'meta' => SchoolSync::meta()];
             DB::table('teacher_submissions')->insert(['teacher_id' => $teacher->id, 'submission_id' => $data['submission_id'], 'payload_hash' => $hash, 'acknowledgement' => json_encode($ack, JSON_THROW_ON_ERROR), 'created_at' => now(), 'updated_at' => now()]);
 
             return response()->json($ack, $sessionId ? 200 : 201);
         }, 3);
     }
 
-    private function assignment(Student $student, array $input, string $field): QuranAssignment
+    private function assignment(Student $student, array $input, string $field, TeachingSession $session): QuranAssignment
     {
         $assignment = $this->findAssignment($student, $input['id'] ?? null, $input['client_uuid'] ?? null, $field);
         if (! empty($input['id']) && ! $assignment) {
@@ -169,7 +169,10 @@ class SubmitTeacherSession
                 }
             }
         }
-        $assignment ??= new QuranAssignment(['student_id' => $student->id]);
+        if (! $assignment) {
+            $assignment = new QuranAssignment(['student_id' => $student->id]);
+            $assignment->forceFill(['created_in_session_id' => $session->id]);
+        }
         $assignment->fill($passage + ['is_passed' => $input['is_passed']]);
         if (! empty($input['client_uuid'])) {
             $assignment->forceFill(['client_uuid' => $input['client_uuid']]);

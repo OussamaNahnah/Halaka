@@ -65,6 +65,7 @@ class StudentSession {
 }
 class QuranAssignment {
   int id
+  int created_in_session_id
   uuid client_uuid
   int student_id
   string surah_name
@@ -93,6 +94,7 @@ Teacher "1" -- "0..*" Session : teaches
 Session "1" -- "0..*" StudentSession : contains
 Student "1" -- "0..*" StudentSession : has
 Student "1" -- "0..*" QuranAssignment : owns
+Session "0..1" -- "0..*" QuranAssignment : created in
 StudentSession "1" -- "0..*" QuranAssessment : records todays assessment
 QuranAssignment "1" -- "0..*" QuranAssessment : assessed through
 ```
@@ -102,10 +104,10 @@ QuranAssignment "1" -- "0..*" QuranAssessment : assessed through
 - Administrators create administrator and teacher accounts and assign or reset their passwords. Only `User.password_hash` is stored; passwords are never returned in user/profile responses. Filament uses Laravel session authentication; the teacher API uses a separate JWT guard.
 - The current roles are Administrator, Teacher, and Student. One account can have more than one role.
 - Each session has one teacher and can include several students.
-- Keep current session work in page memory until submission. Persist only profile/JWT; refreshing or closing loses unsent work. Creating a session requires online classroom preparation.
+- Client persistence follows the [MVP storage decision](mvp.md#flutter-teacher-rebuild--approved): Flutter keeps active session work in SQLite across restarts; the browser keeps school work in page memory. Creating a new session requires online classroom preparation.
 - Session completion and synchronization are separate: `status` starts as `in_progress` and becomes `completed` when the teacher selects **Finish and send session**. A completed session may still be waiting for upload.
-- A new local session has `sync_status = local_only`. Finishing queues an in-memory submission (`pending_upload`); while transmitting, show `uploading`. Only a successful server acknowledgement for the submitted revision changes it to `synced`.
-- If there is no connection or an upload fails, keep the submission in page memory as `pending_upload` and retry while the page stays open. Never report success before acknowledgement. Refreshing/closing loses the pending submission.
+- A new local session has `sync_status = local_only`. Finishing queues an immutable submission (`pending_upload`); while transmitting, show `uploading`. Only a successful server acknowledgement for the submitted revision changes it to `synced`.
+- If an upload fails, retain the immutable submission as `pending_upload` and retry while running. Flutter restores it from SQLite after reopening; browser work lasts only for the open page. Never report success before acknowledgement.
 - Send the session, attendance, assignments, and assessments together. The server must authorize and validate the submission and save it atomically. Repeated sends of the same submission must not create duplicate sessions or child records; use the stable client UUID and a submission revision/idempotency key.
 - Teachers can edit saved sessions without deleting them. Administrators can create/edit sessions and soft-delete/restore them under the archive rules below. Edits to an already uploaded session are saved locally, move its sync state to `local_only`, and require another explicit finish-and-send action. Preserve the server's last accepted revision until the new revision is acknowledged. Never mark newer local edits as synced merely because an earlier upload succeeds.
 - While a session is in progress, students not yet finished display as **Not evaluated yet**. The teacher's **Finish student** action sets `evaluated_at` and marks the student `present`. On **Finish and send session**, roster students whose `evaluated_at` is null are marked `absent`; list their names for confirmation before submission.
@@ -116,7 +118,7 @@ QuranAssignment "1" -- "0..*" QuranAssessment : assessed through
 - Attendance is recorded through student/session completion as described above; finishing a previously absent student during correction marks them present in the next submitted revision. Each student has at most one `StudentSession` record per session.
 - For each student in a Quran session, the teacher has two sections: **Today's assessment**, which records a grade and optional comment for each previously assigned passage recited today, and **Next session's assignments**, which records passages to prepare.
 - Both sections support `new_memorization` and `revision`. Each assigned passage has its own `QuranAssignment`; each assessment of that passage has its own `QuranAssessment` and grade. The assessment gets its passage and type from the assignment, rather than duplicating them.
-- Each assignment belongs directly to one student and covers one surah, selected by name, with an inclusive ayah range and type. It has no assigning-session relationship; the model does not record which session or teacher originally assigned it.
+- Each assignment belongs directly to one student and covers one surah, selected by name, with an inclusive ayah range and type. Its optional `created_in_session_id` records the session where it was first assigned. The server sets it only when a teacher creates a new assignment in an accepted submission, including new assignments added during a session correction. It is not a scheduled future assessment session. Keep existing/admin-created assignments null; do not infer an origin from timestamps or later assessment attempts. Preserve the original value on updates, retries and assessment in other sessions. The link survives soft deletion; permanent deletion of a referenced session is restricted.
 - Each assessment references one assignment and one `StudentSession`, identifying the student and session of that attempt. Its assignment's `student_id` must match the roster record's `student_id`. An assignment can have several assessments across sessions, preserving every attempt's grade and comment.
 - `QuranAssignment.is_passed` starts as `false` (pending). After assessing a passage, the teacher explicitly chooses whether to set it to `true` (passed). A grade or the existence of an assessment never automatically marks it passed; no passing threshold is defined.
 - If the full passage needs another attempt, keep the same assignment pending and record a new assessment in a later session. Do not create a copy or replace an earlier assessment. Passed assignments leave the pending list, but all attempts remain visible in history.
@@ -143,7 +145,7 @@ QuranAssignment "1" -- "0..*" QuranAssessment : assessed through
 - `QuranAssignment.client_uuid` and `QuranAssessment.client_uuid` are nullable unique stable identities for client-created records; existing administrator records keep server IDs and may have no client UUID.
 - `Session.sync_status` is device-local metadata, not a server-controlled visibility flag. Its values are `local_only`, `pending_upload`, `uploading`, and `synced`; default to `local_only`. These fields describe transient client submission state; do not treat every local field as a Laravel database column.
 - `Session.last_synced_at` is nullable and records the last server acknowledgement time, not the time of local saving. It remains unchanged during unsent edits or failed retries.
-- Persist only profile/JWT in localStorage. School records, queues, preferences, and recovery copies are memory-only. Clear legacy IndexedDB and teacher caches on upgrade. Warn before refresh/close with unsent work; never show **Saved on device**.
+- The browser persists only profile/JWT in localStorage and clears legacy IndexedDB/teacher caches; its school work remains memory-only. Flutter may show **Saved on device** only after its SQLite write succeeds, following the [MVP storage decision](mvp.md#flutter-teacher-rebuild--approved).
 - `Session.timestamp` stores the session date and time in one field.
 - A teacher uses the name and email from their account. A student record has a name so it can exist without an account.
 - `Student.id` is generated by the database; administrators do not enter or edit it. There is no separate manually entered student number.
@@ -152,7 +154,7 @@ QuranAssignment "1" -- "0..*" QuranAssessment : assessed through
 - The MVP stores one parent/guardian contact number per student; multiple contacts and parent profiles are deferred.
 - `StudentSession.evaluated_at` is nullable and records when the teacher explicitly finishes the student. Before session completion, a null value means not evaluated yet; on completion it determines absence. `attendance_status` starts as `not_marked` and becomes `present` or `absent` under these rules.
 - `StudentSession.id` is the primary key. Keep a unique constraint on `(student_id, session_id)` so each student has only one attendance record per session. Grades and comments belong to `QuranAssessment`, not `StudentSession`.
-- `QuranAssignment.student_id` is required and references `Student.id`. Assignments are independent of sessions; assessment attempts provide their session history.
+- `QuranAssignment.student_id` is required and references `Student.id`. Assignments remain student-owned. The nullable `created_in_session_id` references `teaching_sessions.id` as read-only origin metadata; assessment attempts independently record the sessions where evaluation occurred.
 - `QuranAssignment.is_passed` is a required boolean, defaulting to `false`. False means pending; true means passed. Laravel casts it to boolean. It is explicitly set by the teacher or administrator, independently of session completion and grade values.
 - `QuranAssignment.surah_name` stores the Arabic name from the complete 114-surah catalog; recognized legacy English input is normalized to Arabic.
 - `QuranAssignment.surah_name`, `from_ayah`, `to_ayah`, and `type` are required. Validate the selected surah and ensure `1 <= from_ayah <= to_ayah` without an upper bound from the catalog. `type` must be `new_memorization` or `revision`.
@@ -165,7 +167,7 @@ QuranAssignment "1" -- "0..*" QuranAssessment : assessed through
 - Confirm whether students can belong to several groups and whether every session must belong to a group. The initial design allows multiple memberships and optional session groups.
 - Teacher API access is decided: all active groups/students, only owned sessions, and latest taught group suggestion. First uploads snapshot the current group roster; edits preserve the saved active roster. See the API contract.
 - Server conflict detection is implemented using a conservative school-wide revision plus session revision and durable idempotency acknowledgements. The client implements explicit conflict review and recovery backups; finer-grained revisions remain future work; never silently overwrite a newer revision.
-- Current storage policy is decided: remove acknowledged temporary work, fetch history online, and retry finished submissions only while the page is open.
+- Current storage policy is decided in the [MVP](mvp.md#flutter-teacher-rebuild--approved): remove acknowledged local work and fetch history online; Flutter can recover its active session after reopening.
 
 Teacher rule: assess each assignment once per session and edit that existing assessment as needed. Reassessment is available in a later session. Preserve historical attempts and administrator privileges; no database uniqueness constraint is added to the assessment table.
 

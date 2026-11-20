@@ -49,17 +49,17 @@ class QuranAssignmentResource extends Resource
 
     public static function infolist(Schema $schema): Schema
     {
-        return $schema->components([TextEntry::make('student.name')->label('الطالب')->url(fn ($record) => StudentResource::getUrl('view', ['record' => $record->student_id])), TextEntry::make('surah_name')->label('السورة'), TextEntry::make('from_ayah')->label('من الآية'), TextEntry::make('to_ayah')->label('إلى الآية'), TextEntry::make('is_passed')->label('الإتقان')->formatStateUsing(fn ($state) => $state ? 'مجتاز' : 'قيد الإنجاز')])->columns(2);
+        return $schema->components([TextEntry::make('student.name')->label('الطالب')->url(fn ($record) => StudentResource::getUrl('view', ['record' => $record->student_id])), AssignmentSchema::originEntry(), TextEntry::make('surah_name')->label('السورة'), TextEntry::make('from_ayah')->label('من الآية'), TextEntry::make('to_ayah')->label('إلى الآية'), TextEntry::make('is_passed')->label('الإتقان')->formatStateUsing(fn ($state) => $state ? 'مجتاز' : 'قيد الإنجاز')])->columns(2);
     }
 
     public static function table(Table $table): Table
     {
-        return $table->columns([TextColumn::make('student.name')->label('الطالب')->searchable()->url(fn ($record) => StudentResource::getUrl('view', ['record' => $record->student_id])), TextColumn::make('surah_name')->label('السورة')->searchable(), TextColumn::make('passage')->label('الآيات')->state(fn ($record) => $record->from_ayah.'–'.$record->to_ayah), TextColumn::make('type')->label('النوع')->formatStateUsing(fn ($state) => $state === 'revision' ? 'مراجعة' : 'حفظ جديد'), TextColumn::make('is_passed')->label('الإتقان')->badge()->formatStateUsing(fn ($state) => $state ? 'مجتاز' : 'قيد الإنجاز'), TextColumn::make('assessments_count')->label('المحاولات')->counts('assessments')])->filters([TrashedFilter::make(), SelectFilter::make('student_id')->label('الطالب')->relationship('student', 'name')->searchable(), TernaryFilter::make('is_passed')->label('الإتقان'), SelectFilter::make('type')->label('النوع')->options(['revision' => 'مراجعة', 'new_memorization' => 'حفظ جديد'])])->recordActions([ViewAction::make(), EditAction::make(), DeleteAction::make(), RestoreAction::make()])->toolbarActions([DeleteBulkAction::make(), RestoreBulkAction::make()])->defaultSort('id', 'desc');
+        return $table->columns([TextColumn::make('student.name')->label('الطالب')->searchable()->url(fn ($record) => StudentResource::getUrl('view', ['record' => $record->student_id])), TextColumn::make('surah_name')->label('السورة')->searchable(), AssignmentSchema::originColumn(), TextColumn::make('passage')->label('الآيات')->state(fn ($record) => $record->from_ayah.'–'.$record->to_ayah), TextColumn::make('type')->label('النوع')->formatStateUsing(fn ($state) => $state === 'revision' ? 'مراجعة' : 'حفظ جديد'), TextColumn::make('is_passed')->label('الإتقان')->badge()->formatStateUsing(fn ($state) => $state ? 'مجتاز' : 'قيد الإنجاز'), TextColumn::make('assessments_count')->label('المحاولات')->counts('assessments')])->filters([TrashedFilter::make(), SelectFilter::make('student_id')->label('الطالب')->relationship('student', 'name')->searchable(), TernaryFilter::make('is_passed')->label('الإتقان'), SelectFilter::make('type')->label('النوع')->options(['revision' => 'مراجعة', 'new_memorization' => 'حفظ جديد'])])->recordActions([ViewAction::make(), EditAction::make(), DeleteAction::make(), RestoreAction::make()])->toolbarActions([DeleteBulkAction::make(), RestoreBulkAction::make()])->defaultSort('id', 'desc');
     }
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->withoutGlobalScopes([SoftDeletingScope::class]);
+        return parent::getEloquentQuery()->with('createdInSession')->withoutGlobalScopes([SoftDeletingScope::class]);
     }
 
     public static function saveRecord(array $data, ?QuranAssignment $record = null): Model

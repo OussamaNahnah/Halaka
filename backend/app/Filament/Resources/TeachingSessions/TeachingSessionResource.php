@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\TeachingSessions;
 
 use App\Filament\RelationManagers\AssessmentsRelationManager;
+use App\Filament\RelationManagers\CreatedAssignmentsRelationManager;
 use App\Filament\RelationManagers\StudentSessionsRelationManager;
 use App\Models\Group;
 use App\Models\Student;
@@ -83,7 +84,7 @@ class TeachingSessionResource extends Resource
 
     public static function getRelations(): array
     {
-        return [StudentSessionsRelationManager::class, AssessmentsRelationManager::class];
+        return [StudentSessionsRelationManager::class, AssessmentsRelationManager::class, CreatedAssignmentsRelationManager::class];
     }
 
     public static function getPages(): array

@@ -67,7 +67,7 @@ All domain tables have generated primary keys and normal creation/update timesta
 | 5 | `groups`, `group_student` | Group ID/name; membership pivot with unique `(group_id, student_id)`. No teacher foreign key on Group. |
 | 6 | `teaching_sessions` | Domain Session: `id`, `teacher_id`, nullable `group_id`, `timestamp`, `status` default `in_progress`. Use this table/model name to avoid collision with Laravel's framework `sessions` table. |
 | 7 | `student_sessions` | `id`, `student_id`, `session_id` referencing `teaching_sessions`, `attendance_status` default `not_marked`, nullable `evaluated_at`; unique `(student_id, session_id)`. |
-| 8 | `quran_assignments` | `id`, required `student_id`, `surah_name`, positive `from_ayah`/`to_ayah`, `type`, boolean `is_passed` default `false`. No assigning-session or repeat/source foreign key. |
+| 8 | `quran_assignments` | `id`, required `student_id`, `surah_name`, positive `from_ayah`/`to_ayah`, `type`, boolean `is_passed` default `false`. Delivery 1 originally had no origin link; the later additive `created_in_session_id` migration now records optional provenance under the class diagram rules. No repeat/source foreign key. |
 | 9 | `quran_assessments` | `id`, `student_session_id`, `quran_assignment_id`, double `grade`, nullable text `comment`. No fixed grade range; validate that the assignment and assessing roster record belong to the same student in application logic. |
 | 10 | Add soft deletes | Add nullable `deleted_at` to teachers, students, groups, teaching_sessions, student_sessions, quran_assignments, and quran_assessments. Keep roles and pivots intact; the separate users migration below adds account archival. |
 | 11 | Add user soft deletes | Add nullable `users.deleted_at` for administrator-account archival. Preserve roles, profiles, and teaching history; archived users cannot authenticate. |
@@ -89,7 +89,7 @@ Grades use `double` to accept numbers without a fixed decimal-place limit, as re
 | Group | `students()` belongsToMany Student; `sessions()` hasMany TeachingSession. |
 | TeachingSession | `teacher()` belongsTo Teacher; optional `group()` belongsTo Group; `studentSessions()` hasMany StudentSession. |
 | StudentSession | `student()` belongsTo Student; `session()` belongsTo TeachingSession using `session_id`; `assessments()` hasMany QuranAssessment. |
-| QuranAssignment | `student()` belongsTo Student; `assessments()` hasMany QuranAssessment. |
+| QuranAssignment | `student()` belongsTo Student; `createdInSession()` belongsTo TeachingSession withTrashed (optional); `assessments()` hasMany QuranAssessment. |
 | QuranAssessment | `studentSession()` belongsTo StudentSession; `assignment()` belongsTo QuranAssignment. |
 
 Derive student assignment/history views through these existing relationships; keep the student foreign key on assignments, and do not copy student IDs or surah/type fields to assessments. An assignment's student and an assessment's student must match.
@@ -223,3 +223,7 @@ Student-session records, assignments, and assessments have separate searchable l
 The standalone forms reuse domain actions. Assessment assignment choices follow the selected roster student; mismatched students are rejected on the server. An assignment can be reassigned only when retained assessment links remain consistent, including archived attempts. Validation errors appear next to their form fields. Grades remain unrestricted numeric values.
 
 TeachingResourcesTest verifies all new pages and administrator access, create/edit flows, duplicate roster rejection including archived records, assignment ownership consistency, repeated integer/decimal/negative grades, assessment filters, and soft-delete/bulk restore with linked history retained.
+
+### Assignment creation-session navigation
+
+Filament shows the optional source session as a read-only link in assignment list/detail/edit screens and the student assignment table/modal. A session tab lists assignments given in that session, links to their student and assignment pages, and supports the archive filter. It does not offer origin reassignment; normal assignment editing remains available through its resource. Unknown legacy/admin-created origins show «غير معروفة».

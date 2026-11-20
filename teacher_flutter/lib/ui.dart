@@ -185,3 +185,46 @@ class PageIdentity extends StatelessWidget {
     ],
   );
 }
+
+/// Uses the exact viewport of the existing teacher-app wordmark asset.
+class HalakaLogo extends StatelessWidget {
+  const HalakaLogo({super.key});
+  @override
+  Widget build(BuildContext context) => Semantics(
+    label: 'شعار حلقة',
+    image: true,
+    child: Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: const Color(0xfff8f7f2),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: SizedBox(
+        width: 180,
+        height: 62,
+        child: FittedBox(
+          child: SizedBox(
+            width: 1015,
+            height: 350,
+            child: Stack(
+              clipBehavior: Clip.hardEdge,
+              children: [
+                Positioned(
+                  left: -435,
+                  top: -230,
+                  width: 1931,
+                  height: 814,
+                  child: Image.asset(
+                    'assets/brand/halaka.png',
+                    excludeFromSemantics: true,
+                    fit: BoxFit.fill,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+}

@@ -23,9 +23,9 @@ Arabic RTL, Tajawal, Halaka branding, compact headers with inline logo, accessib
 
 - Show the student's pending assignments, including those attempted in earlier sessions, plus assessments already recorded in the current session. Passed assignments leave the pending list; retain every attempt in history.
 - Each row shows memorization/revision type, surah, inclusive ayah range, and a separate grade field. Grades accept any numeric value, with or without decimals; empty is unassessed, not zero.
-- An optional comment expands to the full row width. Preserve unsaved input when adding a passage, navigating, or refreshing the view.
+- Optional comments use the full row width. Flutter shows the note field directly; the web client retains its existing expandable control. Preserve unsaved input when adding a passage, navigating, or refreshing the view.
 - After an assessment, let the teacher explicitly set `is_passed` (`false` for pending, `true` for passed); do not infer passing from a grade. Full-passage retries create another assessment on the same pending assignment. Smaller passages use separate pending assignments without a repeat/source link.
-- Assignments belong directly to students, with no assigning-session relationship. Validate that each assessment's assignment and roster record belong to the same student.
+- Assignments belong directly to students and retain optional `created_in_session_id` provenance under the class diagram rules. Validate that each assessment's assignment and roster record belong to the same student.
 
 ### Next assignments
 
@@ -48,7 +48,9 @@ All classroom data, sessions, drafts, submission queues, temporary recovery copi
 
 Allow one unfinished/unacknowledged session per open application. New sessions require online classroom preparation. Only finished submissions retry automatically when connectivity returns, with bounded backoff, while the page stays open. Validation/conflict failures require review; authentication failures require login. A closed application cannot retry.
 
-## 4. Completion and sending
+## 4. Completion and sending — browser
+
+Flutter uses the same completion and idempotency rules with durable local work under the [MVP storage decision](mvp.md#flutter-teacher-rebuild--approved).
 
 1. Keep edits in page memory as `in_progress` / `local_only`.
 2. Finish and send confirms unfinished students, marks them absent, and never invents grades.
@@ -138,10 +140,22 @@ Teacher rule: assess each assignment once per session and edit that existing ass
 
 The teacher worksheet uses “يحتاج إعادة” (needs repeat), unchecked by default for a new evaluation. A graded passage is explicitly submitted as passed unless repeat is selected; previously recorded repeat decisions are preserved. Untouched/unassessed assignments retain pending status, and no grade threshold determines passing.
 
-Current connection policy: one unfinished/unacknowledged session per open application. Only profile/JWT survive refresh; all unsent work is temporary. See the frontend README.
+Browser connection policy: one unfinished/unacknowledged session per open application. Only profile/JWT survive refresh; all unsent work is temporary. See the frontend README.
 
 ## Flutter rebuild — current user decision
 
-A minimal Flutter client is approved and implemented in [`teacher_flutter/`](../teacher_flutter/README.md), using the existing API contract and domain rules. This supersedes the Vue-only frontend requirement for the rebuild. The existing web deployment remains available. Persist only profile/JWT; classroom data, draft edits and immutable retry payloads stay in process memory. The Flutter README owns setup, implemented UI scope and verification limitations. Conflict review is intentionally manual: retain the local worksheet, inspect server data, then explicitly reopen and re-enter corrections rather than silently changing the revision.
+A minimal Flutter client is approved and implemented in [`teacher_flutter/`](../teacher_flutter/README.md), using the existing API contract and domain rules. This supersedes the Vue-only frontend requirement for the rebuild. The existing web deployment remains available. The [MVP storage decision](mvp.md#flutter-teacher-rebuild--approved) now authorizes SQLite recovery for the active session and pending upload across restarts. The Flutter README owns setup, implemented UI scope and verification limitations. Conflict review is intentionally manual: retain the local worksheet, inspect server data, then explicitly reopen and re-enter corrections rather than silently changing the revision.
 
 The Flutter UI now follows the existing `teacher-app/src/screens/` interactions and `teacher-app/src/style.css` branding, using the same Laravel endpoint paths. For the native mobile layout, contextual back/title/date/edit headers stay at the top and create/send/finish actions stay in bottom docks; student navigation shares the finish dock. Task screens hide global tabs. The existing web layout remains unchanged. See the Flutter README for implemented behavior and test coverage.
+
+Flutter session lifecycle: keep one active/queued session visible on Home, autosave evaluation inputs locally, and distinguish in-progress/uploading/waiting/conflict states. Do not expose discard for an ordinary queued upload. Enable creation only after the server returns the matching durable submission/session acknowledgement. Conflict review retains its explicit cancel/reopen path. Persist the active session snapshot and original upload identifiers before sending; restore them for the same API host/account on reopening. SQLite errors must remain visible and must block sending until the immutable queue is durable. See the MVP for storage scope.
+
+Flutter authentication failure: a protected API 401 returns directly to Login and clears invalid credentials. Do not offer a separate password-renewal prompt. Keep the account-scoped SQLite snapshot for recovery after normal sign-in.
+
+## Flutter accepted-session summary
+
+Tapping server history opens a read-only summary using the existing owned-session detail GET endpoint. It includes session-created assignments, assessed-passage metadata (including archived passages), and assessment attempts in one serialized snapshot. Show date/group/status, attendance counts, expandable student assessments/grades/comments, and assignments explicitly linked to this session through `created_in_session_id`. The detail response supplies `created_assignments`, including archived records. Do not infer origins for legacy null values; passing/repeat state remains current global state. Archived/unavailable passages retain their attempt ID, grade and comment. Viewing creates no SQLite draft and does not block a new session. An explicit Edit action starts the existing correction workflow with freshly downloaded revision checks; it is disabled while another local session exists. No Delete control or teacher deletion endpoint is added.
+
+Summary presentation assumes the planned fresh production dataset: concise attendance totals, individual assessment grades/notes, and session-created assignments. Hide empty assignment sections and omit legacy-origin explanation text; existing development records are not automatically linked. Show assignment passing state as current («الحالة الآن»), without presenting it as historical assessment outcome.
+
+Flutter repeat grading: checking «يحتاج إعادة» automatically sets grade 0 and disables its input. Unchecking keeps 0 and allows manual grading again. No configuration dialog or saved default is used. Existing historical grades are not rewritten merely by opening the worksheet.

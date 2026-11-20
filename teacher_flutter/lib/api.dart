@@ -1,8 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
-
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -25,13 +23,12 @@ class TeacherApi {
   static const configuredBase = String.fromEnvironment('API_URL');
   static String get base => configuredBase.isNotEmpty
       ? configuredBase
-      : !kIsWeb && defaultTargetPlatform == TargetPlatform.android
-      ? 'http://10.0.2.2/api'
-      : 'http://localhost/api';
+      : 'https://h.oussamanh.com/api';
   static const authKey = 'halaka-teacher-auth';
   final http.Client client;
   String? token;
   Json? profile;
+  void Function()? onUnauthorized;
   TeacherApi({http.Client? client}) : client = client ?? http.Client();
 
   Future<void> restore() async {
@@ -48,6 +45,7 @@ class TeacherApi {
   }
 
   Future<Json> request(String method, String path, [Json? body]) async {
+    final requestToken = token;
     final request = http.Request(
       method,
       Uri.parse('${base.replaceFirst(RegExp(r'/$'), '')}$path'),
@@ -56,7 +54,7 @@ class TeacherApi {
       'Accept': 'application/json',
       'Content-Type': 'application/json',
       'Cache-Control': 'no-store',
-      if (token != null) 'Authorization': 'Bearer $token',
+      if (requestToken != null) 'Authorization': 'Bearer $requestToken',
     });
     if (body != null) request.body = jsonEncode(body);
     final http.Response response;
@@ -67,6 +65,13 @@ class TeacherApi {
       throw NetworkError();
     } on TimeoutException {
       throw NetworkError();
+    }
+    if (response.statusCode == 401 &&
+        path != '/login' &&
+        requestToken != null &&
+        token == requestToken) {
+      await forget();
+      onUnauthorized?.call();
     }
     Json data;
     try {

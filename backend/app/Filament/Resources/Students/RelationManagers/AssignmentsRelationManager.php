@@ -46,8 +46,9 @@ class AssignmentsRelationManager extends RelationManager
 
     public function table(Table $table): Table
     {
-        return $table->modifyQueryUsing(fn ($query) => $query->withTrashed())->columns([
+        return $table->modifyQueryUsing(fn ($query) => $query->withTrashed()->with('createdInSession'))->columns([
             TextColumn::make('surah_name')->label('السورة')->searchable(),
+            AssignmentSchema::originColumn(),
             TextColumn::make('passage')->label('الآيات')->state(fn (QuranAssignment $record) => $record->from_ayah.'–'.$record->to_ayah),
             TextColumn::make('type')->label('النوع')->formatStateUsing(fn (string $state) => $state === 'revision' ? 'مراجعة' : 'حفظ جديد'),
             TextColumn::make('is_passed')->label('الحالة')->badge()->formatStateUsing(fn (bool $state) => $state ? 'مجتاز' : 'قيد الإنجاز')->color(fn (bool $state) => $state ? 'success' : 'warning'),
@@ -59,6 +60,7 @@ class AssignmentsRelationManager extends RelationManager
             EditAction::make()->using(fn (QuranAssignment $record, array $data) => app(SaveAssignment::class)->execute($this->getOwnerRecord(), $data, $record)), DeleteAction::make(), RestoreAction::make(),
             ViewAction::make()->label('عرض التقييمات')->modalHeading('الواجب ومحاولات التسميع')->schema([
                 TextEntry::make('surah_name')->label('السورة'),
+                AssignmentSchema::originEntry(),
                 TextEntry::make('from_ayah')->label('من الآية'), TextEntry::make('to_ayah')->label('إلى الآية'),
                 RepeatableEntry::make('assessments')->label('التقييمات')->schema([
                     TextEntry::make('grade')->label('العلامة'), TextEntry::make('comment')->label('التعليق')->placeholder('—'),

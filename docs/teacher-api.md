@@ -2,7 +2,7 @@
 
 This is the implemented backend contract for Delivery 2. The endpoint list is maintained in [teacher-plan.md](teacher-plan.md#minimal-endpoint-plan). The separate [teacher PWA](../teacher-app/README.md) consumes this API and persists only profile/JWT; school work and automatic retries stay in page memory while open, with conflict review.
 
-The [Flutter teacher client](../teacher_flutter/README.md) also consumes this unchanged contract and persists only profile/JWT; all school work stays in process memory.
+The [Flutter teacher client](../teacher_flutter/README.md) also consumes this unchanged contract and follows the [native SQLite storage decision](mvp.md#flutter-teacher-rebuild--approved). Restored uploads retain their original base revisions, submission IDs and exact payloads.
 
 ## Setup and authentication
 
@@ -114,7 +114,7 @@ This conservative strategy also rejects unrelated school changes and another suc
 
 Use Eloquent/domain actions for school writes. Raw SQL/bulk query updates bypass model observers and are outside the API/Filament mutation contract; migrations/imports must explicitly advance the revision and coordinate with the shared lock. Do not accept teacher uploads through a second path that bypasses these checks.
 
-Errors: 401 missing/invalid/revoked credentials; 403 unavailable teacher role/profile; 404 unavailable or foreign session; 409 stale revision or reused identities; 422 field validation; 429 rate limit. Validation errors use dotted student/assignment/attempt paths. Keep local work on all failures. Server acceptance acknowledges only the submitted revision; the teacher app keeps only profile/JWT persistently and provides temporary in-page conflict review.
+Errors: 401 missing/invalid/revoked credentials; 403 unavailable teacher role/profile; 404 unavailable or foreign session; 409 stale revision or reused identities; 422 field validation; 429 rate limit. Validation errors use dotted student/assignment/attempt paths. Keep local work on all failures. Server acceptance acknowledges only the submitted revision; the browser keeps only profile/JWT persistently; the Flutter client retains active work in SQLite under the MVP storage decision.
 
 ## Surah names
 
@@ -129,3 +129,11 @@ Teacher rule: assess each assignment once per session and edit that existing ass
 Teacher assessment submissions now include an optional Boolean `needs_repeat` (always sent by the current teacher app): `true` writes `QuranAssignment.is_passed = false`; `false` writes `is_passed = true`. It is an input decision only, not an assessment database column. It takes precedence over any older `is_passed` copy in assignment upserts. Omitted values retain legacy-client behavior. Untouched, unassessed rows are not submitted and remain pending.
 
 Each session detail returns the assignment's current global `is_passed` alongside its assessment. Acknowledgements include `assignment_states` (`id`, `student_id`, `client_uuid`, `is_passed`) so the app updates its shared cache and synchronized historical views. Unsent work keeps its edit intent and still uses revision checks. Older acknowledgements never replace newer known assignment states. Original grades and assessment links remain unchanged.
+
+## Assignment origin sessions
+
+Assignment reads include nullable `created_in_session_id`. This field is server-owned: do not include it in submission assignment objects. New assignments created through an atomic session upload receive that session ID; existing records keep their origin, including null, across updates/replays and later assessments. No backfill is attempted for existing/admin-created assignments. The additive migration preserves records and advances the school revision.
+
+Owned-session detail and new acknowledgements include `data.created_assignments`: assignments whose origin is that session, with `id`, `client_uuid`, `student_id`, `student_name`, `created_in_session_id`, passage/type, current `is_passed`, and `archived`. Include archived assignments for history; session authorization remains unchanged. Durable acknowledgements from before this addition replay unchanged; clients must tolerate the field being absent and fetch current session detail. Source-session archival does not archive assignments. The nullable FK restricts permanent deletion; administration shows the origin as a read-only link. The field identifies where the assignment was given, not the future session in which it must be evaluated.
+
+Session detail and new acknowledgements also include `data.assessed_assignments`: distinct passage metadata for assignments referenced by that session’s returned assessments, including archived assignments. Fields: `id`, `student_id`, `created_in_session_id`, passage/type, current `is_passed`, and `archived`. Attempts remain under each session roster student. Flutter summaries read a single session snapshot; they do not fetch unrelated student assignments. Editing may still fetch current classroom context with revision checks.

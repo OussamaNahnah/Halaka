@@ -34,7 +34,7 @@ The current user decision removes persistent offline school storage. Completing 
 
 ## Flutter teacher rebuild — approved
 
-The user approved a minimal Flutter teacher client using the existing Laravel API, with only profile/JWT persisted. Implementation lives in [`teacher_flutter/`](../teacher_flutter/README.md); school data, drafts and retry queues remain in process memory. Android/iOS scaffolds are present. Keep the existing Vue app available during migration; replacing its hosting route is outside this change. This approval supersedes the native-app deferral for the teacher client only.
+The user approved a minimal Flutter teacher client using the existing Laravel API. **Current native storage decision:** save the active/unfinished session, evaluations, assignment form, required classroom context and immutable pending upload in local SQLite, isolated by API host/account. Restore it after closing/reopening, including original revision and submission IDs. Remove local work after matching server acknowledgement, explicit conflict cancellation, or confirmed deletion of a local draft that has not been queued. Never delete queued/in-flight uploads through the draft-delete action; keep one session blocked until then. Do not store passwords. Profile/JWT remain in preferences; general history and UI preferences are not persisted. Checking «يحتاج إعادة» in Flutter sets the grade to 0 and locks grade editing until unchecked. Unchecking keeps 0 and enables manual grading. No repeat-grade preference is stored. Retries run while the app is open and resume after reopening; no OS background-upload guarantee. This supersedes memory-only storage for Flutter only; the Vue browser policy stays unchanged. Implementation lives in [`teacher_flutter/`](../teacher_flutter/README.md). Android/iOS scaffolds are present. Keep the existing Vue app available during migration; replacing its hosting route is outside this change. This approval supersedes the native-app deferral for the teacher client only.
 
 ## Shared rules
 
@@ -44,7 +44,7 @@ The [class diagram](class-diagram.md) is the authoritative domain model.
 - Generated student IDs; optional shared sibling `parent_phone`; no Parent entity.
 - Each student/session pair is unique. Group membership changes preserve historical rosters and results.
 - Each assignment covers one surah/range/type. Each assessment references an assignment for the same student; it does not copy the passage/type.
-- Assignment passing is stored as the teacher-selected boolean `is_passed`, not derived from grades or the existence of assessments. Retain every assessment attempt; assignments have no assigning-session or repeat/source link.
+- Assignment passing is stored as the teacher-selected boolean `is_passed`, not derived from grades or the existence of assessments. Retain every assessment attempt; assignments retain optional creation-session provenance as defined in the class diagram; no repeat/source link is used.
 - Administrator changes must not be silently overwritten by future teacher synchronization.
 
 ## Deferred

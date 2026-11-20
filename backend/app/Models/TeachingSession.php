@@ -36,6 +36,11 @@ class TeachingSession extends Model
         return $this->hasMany(StudentSession::class, 'session_id');
     }
 
+    public function createdAssignments(): HasMany
+    {
+        return $this->hasMany(QuranAssignment::class, 'created_in_session_id');
+    }
+
     public function assessments(): HasManyThrough
     {
         return $this->hasManyThrough(QuranAssessment::class, StudentSession::class, 'session_id', 'student_session_id')->withTrashedParents();

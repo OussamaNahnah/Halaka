@@ -22,7 +22,7 @@ class TeacherSessionController extends Controller
     {
         $record = $request->user()->teacher->sessions()->findOrFail($session);
 
-        return (new TeacherSessionResource($record->load(['group', 'studentSessions.student', 'studentSessions.assessments.assignment'])))->additional(['meta' => SchoolSync::meta()]);
+        return (new TeacherSessionResource($record->load(['group', 'studentSessions.student', 'studentSessions.assessments.assignment', 'createdAssignments' => fn ($query) => $query->withTrashed()->with('student')])))->additional(['meta' => SchoolSync::meta()]);
     }
 
     public function store(StoreSessionSubmissionRequest $request, SubmitTeacherSession $submit)

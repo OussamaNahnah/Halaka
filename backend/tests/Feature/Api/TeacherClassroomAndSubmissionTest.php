@@ -346,4 +346,68 @@ class TeacherClassroomAndSubmissionTest extends TestCase
         $this->getJson('/api/sessions/'.$id, $this->headers)->assertJsonPath('data.students.0.assessments.0.is_passed', false);
         $this->assertSame(3, $this->assignment->assessments()->count());
     }
+
+    public function test_assignment_origin_is_recorded_once_and_returned_by_the_owned_session_summary(): void
+    {
+        $this->assertNull($this->assignment->created_in_session_id);
+        $payload = $this->payload();
+        $uuid = (string) Str::uuid();
+        $payload['students'][0]['assignments'][] = ['client_uuid' => $uuid, 'surah_name' => 'الملك', 'from_ayah' => 1, 'to_ayah' => 10, 'type' => 'new_memorization', 'is_passed' => false];
+        $response = $this->upload($payload)->assertCreated();
+        $id = $response->json('data.id');
+        $assignment = QuranAssignment::where('client_uuid', $uuid)->firstOrFail();
+        $this->assertSame($id, $assignment->created_in_session_id);
+        $this->assertSame($id, $assignment->createdInSession->id);
+        $response->assertJsonPath('data.created_assignments.0.id', $assignment->id)->assertJsonPath('data.created_assignments.0.created_in_session_id', $id);
+        $this->upload($payload)->assertCreated()->assertExactJson($response->json());
+        $update = $this->revision($payload);
+        $this->putJson('/api/sessions/'.$id, $update, $this->headers)->assertOk();
+        $this->assertSame($id, $assignment->fresh()->created_in_session_id);
+        $later = $this->payload();
+        $later['students'][0]['assessments'][0]['quran_assignment_id'] = $assignment->id;
+        $laterId = $this->upload($later)->assertCreated()->assertJsonCount(0, 'data.created_assignments')->json('data.id');
+        $this->assertNotSame($id, $laterId);
+        $this->assertSame($id, $assignment->fresh()->created_in_session_id);
+        $this->getJson('/api/students/'.$this->student->id.'/assignments', $this->headers)->assertOk()->assertJsonPath('data.1.created_in_session_id', $id)->assertJsonPath('data.0.created_in_session_id', null);
+        $this->assignment->delete();
+        $this->getJson('/api/sessions/'.$id, $this->headers)->assertOk()
+            ->assertJsonPath('data.created_assignments.0.id', $assignment->id)
+            ->assertJsonPath('data.assessed_assignments.0.id', $this->assignment->id)
+            ->assertJsonPath('data.assessed_assignments.0.surah_name', 'الناس')
+            ->assertJsonPath('data.assessed_assignments.0.archived', true);
+    }
+
+    public function test_assignment_origins_cannot_be_supplied_by_clients_and_roll_back_atomically(): void
+    {
+        $payload = $this->payload();
+        $payload['students'][0]['assignments'][] = ['client_uuid' => (string) Str::uuid(), 'surah_name' => 'الملك', 'from_ayah' => 1, 'to_ayah' => 10, 'type' => 'revision', 'is_passed' => false, 'created_in_session_id' => 999];
+        $this->upload($payload)->assertUnprocessable();
+        unset($payload['students'][0]['assignments'][0]['created_in_session_id']);
+        $payload['students'][1]['assessments'][] = ['client_uuid' => (string) Str::uuid(), 'quran_assignment_id' => $this->assignment->id, 'grade' => 7];
+        $revision = SchoolSync::revision();
+        $this->upload($payload)->assertUnprocessable();
+        $this->assertDatabaseCount('teaching_sessions', 0);
+        $this->assertDatabaseCount('quran_assignments', 1);
+        $this->assertSame($revision, SchoolSync::revision());
+    }
+
+    public function test_assignment_origin_survives_archival_and_does_not_retroactively_link_legacy_assignments(): void
+    {
+        $payload = $this->payload();
+        $uuid = (string) Str::uuid();
+        $payload['students'][0]['assignments'][] = ['client_uuid' => $uuid, 'surah_name' => 'الملك', 'from_ayah' => 1, 'to_ayah' => 10, 'type' => 'revision', 'is_passed' => false];
+        $payload['students'][0]['assignments'][] = ['id' => $this->assignment->id, 'surah_name' => 'الناس', 'from_ayah' => 1, 'to_ayah' => 6, 'type' => 'revision', 'is_passed' => false];
+        $id = $this->upload($payload)->assertCreated()->json('data.id');
+        $this->assertNull($this->assignment->fresh()->created_in_session_id);
+        $assignment = QuranAssignment::where('client_uuid', $uuid)->firstOrFail();
+        $assignment->delete();
+        $this->getJson('/api/sessions/'.$id, $this->headers)->assertOk()->assertJsonPath('data.created_assignments.0.archived', true)->assertJsonPath('data.created_assignments.0.surah_name', 'الملك');
+        $session = TeachingSession::findOrFail($id);
+        $session->delete();
+        $this->assertSame($id, $assignment->fresh()->createdInSession->id);
+        $this->getJson('/api/sessions/'.$id, $this->headers)->assertNotFound();
+        $this->assertSoftDeleted($assignment);
+        $session->restore();
+        $this->getJson('/api/sessions/'.$id, $this->headers)->assertOk()->assertJsonCount(1, 'data.created_assignments');
+    }
 }

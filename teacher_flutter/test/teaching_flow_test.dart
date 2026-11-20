@@ -1,3 +1,5 @@
+import 'support/memory_draft_store.dart';
+
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -80,7 +82,8 @@ void main() {
           } else if (path == '/api/sessions' && r.method == 'POST') {
             submitted = jsonDecode(r.body);
             result = {
-              'data': {},
+              'submission_id': submitted!['submission_id'],
+              'data': {'id': 1, 'client_uuid': submitted!['client_uuid']},
               'meta': {'sync_revision': 4},
             };
           } else {
@@ -99,7 +102,7 @@ void main() {
           supportedLocales: const [Locale('ar')],
           localizationsDelegates: GlobalMaterialLocalizations.delegates,
           theme: halakaTheme(Brightness.light),
-          home: Home(api: api),
+          home: Home(api: api, draftStore: MemoryDraftStore()),
         ),
       );
       await tester.pumpAndSettle();
@@ -112,9 +115,22 @@ void main() {
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextFormField).first, '-3.125');
       await tester.pumpAndSettle();
+      expect(
+        find.widgetWithText(TextFormField, 'ملاحظة اختيارية'),
+        findsNothing,
+      );
       await tester.tap(find.text('ملاحظة'));
       await tester.pumpAndSettle();
+      expect(
+        find.widgetWithText(TextFormField, 'ملاحظة اختيارية'),
+        findsOneWidget,
+      );
       await tester.enterText(find.byType(TextFormField).last, 'مراجعة');
+      await tester.tap(find.text('إخفاء الملاحظة'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('ملاحظة'));
+      await tester.pumpAndSettle();
+      expect(find.text('مراجعة'), findsOneWidget);
       await tester.tap(find.text('إنهاء الطالب'));
       await tester.pumpAndSettle();
       expect(find.text('تم التسجيل ✓'), findsOneWidget);

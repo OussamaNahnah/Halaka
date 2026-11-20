@@ -23,6 +23,29 @@ class SessionDraft {
     required this.students,
     required this.assignments,
   });
+  Json toJson() => {
+    'id': id,
+    'payload': payload,
+    'students': students,
+    'assignments': assignments.map((key, value) => MapEntry('$key', value)),
+    'pending': pending,
+    'conflict': conflict,
+  };
+  factory SessionDraft.fromJson(Json value) {
+    final result = SessionDraft(
+      id: value['id'],
+      payload: Map<String, dynamic>.from(value['payload']),
+      students: rows(value['students']),
+      assignments: (value['assignments'] as Map).map(
+        (key, value) => MapEntry(int.parse('$key'), rows(value)),
+      ),
+    );
+    result.pending = value['pending'] == null
+        ? null
+        : Map<String, dynamic>.from(value['pending']);
+    result.conflict = value['conflict'] == true;
+    return result;
+  }
   bool get locked => pending != null;
 
   String? validateStudent(Json student) {
@@ -51,7 +74,25 @@ class SessionDraft {
             'evaluated_at': s['evaluated_at'],
             'assignments': s['evaluated_at'] == null
                 ? []
-                : rows(s['assignments']),
+                : rows(s['assignments'])
+                      .map(
+                        (a) => <String, dynamic>{
+                          for (final key in [
+                            'id',
+                            'client_uuid',
+                            'surah_name',
+                            'from_ayah',
+                            'to_ayah',
+                            'type',
+                            'is_passed',
+                          ])
+                            if (a.containsKey(key)) key: a[key],
+                        },
+                      )
+                      .toList(),
+            'removed_assignment_ids': s['evaluated_at'] == null
+                ? []
+                : s['removed_assignment_ids'] ?? [],
             'assessments': s['evaluated_at'] == null
                 ? []
                 : rows(s['assessments'])

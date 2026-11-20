@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:material_ui/material_ui.dart';
 
 import 'api.dart';
@@ -9,12 +11,14 @@ class Worksheet extends StatefulWidget {
   final SessionDraft draft;
   final List<Json> surahs;
   final Future<void> Function()? editSession;
+  final Future<bool> Function()? onChanged;
   const Worksheet({
     super.key,
     required this.student,
     required this.draft,
     required this.surahs,
     this.editSession,
+    this.onChanged,
   });
   @override
   State<Worksheet> createState() => _WorksheetState();
@@ -22,8 +26,10 @@ class Worksheet extends StatefulWidget {
 
 class _WorksheetState extends State<Worksheet> {
   late int position;
-  final notes = <String>{};
   String? error;
+  String? storageError;
+  final gradeControllers = <String, TextEditingController>{};
+  final visibleNotes = <String>{};
   final from = TextEditingController(text: '1'), to = TextEditingController();
   bool composer = false;
   String? surah;
@@ -36,17 +42,63 @@ class _WorksheetState extends State<Worksheet> {
   void initState() {
     super.initState();
     position = widget.draft.students.indexOf(widget.student);
+    restoreComposer();
+    from.addListener(saveComposer);
+    to.addListener(saveComposer);
   }
 
   @override
   void dispose() {
+    for (final controller in gradeControllers.values) {
+      controller.dispose();
+    }
     from.dispose();
     to.dispose();
     super.dispose();
   }
 
+  bool restoringComposer = false;
+  void restoreComposer() {
+    restoringComposer = true;
+    final saved = student['_composer'] as Map?;
+    composer = saved?['open'] == true;
+    surah = saved?['surah'];
+    type = saved?['type'] ?? 'new_memorization';
+    from.text = saved?['from'] ?? '1';
+    to.text = saved?['to'] ?? '';
+    restoringComposer = false;
+  }
+
+  void saveComposer() {
+    if (restoringComposer) return;
+    student['_composer'] = {
+      'open': composer,
+      'surah': surah,
+      'type': type,
+      'from': from.text,
+      'to': to.text,
+    };
+    if (widget.onChanged != null) {
+      unawaited(
+        widget.onChanged!().then((saved) {
+          if (mounted) {
+            setState(
+              () => storageError = saved
+                  ? null
+                  : 'تعذر الحفظ على الجهاز. أبقِ التطبيق مفتوحًا وحاول مجددًا.',
+            );
+          }
+        }),
+      );
+    }
+  }
+
   void changed() {
     student['evaluated_at'] = null;
+    // Capture after the synchronous add/remove/form reset has completed.
+    scheduleMicrotask(() {
+      if (mounted) saveComposer();
+    });
   }
 
   Json? attemptFor(Json assignment) => attempts
@@ -77,6 +129,16 @@ class _WorksheetState extends State<Worksheet> {
     });
   }
 
+  void toggleRepeat(Json assignment, bool repeat) {
+    if (locked) return;
+    if (repeat) {
+      final key = '${student['student_id']}-${assignment['id']}';
+      gradeControllers[key]?.text = '0';
+      edit(assignment, 'grade', 0);
+    }
+    edit(assignment, 'needs_repeat', repeat);
+  }
+
   Future<bool> discardComposer() async {
     if (!composer) return true;
     if (surah == null &&
@@ -84,6 +146,7 @@ class _WorksheetState extends State<Worksheet> {
         from.text == '1' &&
         type == 'new_memorization') {
       setState(() => composer = false);
+      saveComposer();
       return true;
     }
     final discard = await showDialog<bool>(
@@ -111,6 +174,7 @@ class _WorksheetState extends State<Worksheet> {
         to.clear();
       });
     }
+    if (discard == true) saveComposer();
     return discard == true;
   }
 
@@ -146,12 +210,12 @@ class _WorksheetState extends State<Worksheet> {
     if (!await discardComposer() || !mounted) return;
     setState(() {
       position += delta;
-      notes.clear();
+      restoreComposer();
       error = null;
     });
   }
 
-  void finish() {
+  Future<void> finish() async {
     if (composer) {
       setState(() => error = 'أضف الواجب المفتوح أو تخلّ عنه أولاً.');
       return;
@@ -162,7 +226,13 @@ class _WorksheetState extends State<Worksheet> {
       return;
     }
     student['evaluated_at'] = DateTime.now().toUtc().toIso8601String();
-    Navigator.pop(context);
+    if (widget.onChanged != null && !await widget.onChanged!()) {
+      if (mounted) {
+        setState(() => error = 'تعذر الحفظ على الجهاز. حاول مجددًا.');
+      }
+      return;
+    }
+    if (mounted) Navigator.pop(context);
   }
 
   Widget assessment(Json assignment) {
@@ -201,22 +271,41 @@ class _WorksheetState extends State<Worksheet> {
                 const SizedBox(width: 12),
                 SizedBox(
                   width: 76,
-                  child: TextFormField(
-                    key: ValueKey('grade-$key'),
-                    initialValue: a?['grade']?.toString() ?? '',
-                    enabled: !disabled,
-                    decoration: const InputDecoration(
-                      labelText: 'العلامة',
-                      hintText: '—',
-                    ),
-                    textAlign: TextAlign.center,
-                    textDirection: TextDirection.ltr,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                      signed: true,
-                    ),
-                    onChanged: (v) =>
-                        edit(assignment, 'grade', num.tryParse(v) ?? v),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const Text(
+                        'العلامة',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 12),
+                      ),
+                      const SizedBox(height: 4),
+                      Semantics(
+                        label: 'العلامة',
+                        child: TextFormField(
+                          key: ValueKey('grade-$key'),
+                          controller: gradeControllers.putIfAbsent(
+                            key,
+                            () => TextEditingController(
+                              text: a?['grade']?.toString() ?? '',
+                            ),
+                          ),
+                          enabled:
+                              !disabled &&
+                              !(a?['needs_repeat'] ??
+                                  (a == null ? false : a['is_passed'] != true)),
+                          decoration: const InputDecoration(hintText: '—'),
+                          textAlign: TextAlign.center,
+                          textDirection: TextDirection.ltr,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                            signed: true,
+                          ),
+                          onChanged: (v) =>
+                              edit(assignment, 'grade', num.tryParse(v) ?? v),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -234,7 +323,7 @@ class _WorksheetState extends State<Worksheet> {
                             (a == null ? false : a['is_passed'] != true),
                         onChanged: disabled
                             ? null
-                            : (v) => edit(assignment, 'needs_repeat', v),
+                            : (v) => toggleRepeat(assignment, v == true),
                       ),
                       const Flexible(
                         child: Text(
@@ -247,22 +336,34 @@ class _WorksheetState extends State<Worksheet> {
                 ),
                 TextButton.icon(
                   onPressed: () => setState(() {
-                    if (!notes.add(key)) notes.remove(key);
+                    if (!visibleNotes.add(key)) visibleNotes.remove(key);
                   }),
-                  icon: const Icon(Icons.chat_bubble_outline, size: 16),
-                  label: const Text('ملاحظة'),
+                  icon: Icon(
+                    (a?['comment'] ?? '').toString().isEmpty
+                        ? Icons.chat_bubble_outline
+                        : Icons.chat_bubble,
+                    size: 18,
+                  ),
+                  label: Text(
+                    visibleNotes.contains(key) ? 'إخفاء الملاحظة' : 'ملاحظة',
+                  ),
                 ),
               ],
             ),
-            if (notes.contains(key) || '${a?['comment'] ?? ''}'.isNotEmpty)
-              TextFormField(
-                key: ValueKey('note-$key'),
-                initialValue: a?['comment'] ?? '',
-                enabled: !disabled,
-                decoration: const InputDecoration(labelText: 'ملاحظة اختيارية'),
-                minLines: 1,
-                maxLines: null,
-                onChanged: (v) => edit(assignment, 'comment', v),
+            if (visibleNotes.contains(key))
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: TextFormField(
+                  key: ValueKey('note-$key'),
+                  initialValue: a?['comment'] ?? '',
+                  enabled: !disabled,
+                  decoration: const InputDecoration(
+                    labelText: 'ملاحظة اختيارية',
+                  ),
+                  minLines: 1,
+                  maxLines: null,
+                  onChanged: (v) => edit(assignment, 'comment', v),
+                ),
               ),
           ],
         ),
@@ -300,10 +401,26 @@ class _WorksheetState extends State<Worksheet> {
             subtitle: Text('الآيات ${a['from_ayah']}–${a['to_ayah']}'),
             trailing: IconButton(
               tooltip: 'إزالة الواجب',
-              onPressed: locked
+              onPressed:
+                  locked ||
+                      rows(a['assessments']).isNotEmpty ||
+                      attempts.any(
+                        (attempt) =>
+                            attempt['quran_assignment_id'] != null &&
+                            attempt['quran_assignment_id'] == a['id'],
+                      )
                   ? null
                   : () => setState(() {
                       additions.remove(a);
+                      if (a['id'] != null) {
+                        student.putIfAbsent(
+                          'removed_assignment_ids',
+                          () => <int>[],
+                        );
+                        (student['removed_assignment_ids'] as List).add(
+                          a['id'],
+                        );
+                      }
                       changed();
                     }),
               icon: const Icon(Icons.close, color: Color(0xffa52e35)),
@@ -311,29 +428,20 @@ class _WorksheetState extends State<Worksheet> {
           ),
         if (!composer)
           OutlinedButton.icon(
-            onPressed: locked ? null : () => setState(() => composer = true),
+            onPressed: locked
+                ? null
+                : () {
+                    setState(() => composer = true);
+                    saveComposer();
+                  },
             icon: const Icon(Icons.add),
             label: const Text('واجب جديد'),
           )
         else ...[
           Row(
+            textDirection: TextDirection.rtl,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: DropdownButtonFormField<String>(
-                  initialValue: type,
-                  isExpanded: true,
-                  decoration: const InputDecoration(labelText: 'النوع'),
-                  items: const [
-                    DropdownMenuItem(
-                      value: 'new_memorization',
-                      child: Text('حفظ جديد'),
-                    ),
-                    DropdownMenuItem(value: 'revision', child: Text('مراجعة')),
-                  ],
-                  onChanged: (v) => setState(() => type = v!),
-                ),
-              ),
-              const SizedBox(width: 10),
               Expanded(
                 child: DropdownButtonFormField<String>(
                   initialValue: surah,
@@ -348,7 +456,29 @@ class _WorksheetState extends State<Worksheet> {
                         ),
                       )
                       .toList(),
-                  onChanged: (v) => setState(() => surah = v),
+                  onChanged: (v) {
+                    setState(() => surah = v);
+                    saveComposer();
+                  },
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: DropdownButtonFormField<String>(
+                  initialValue: type,
+                  isExpanded: true,
+                  decoration: const InputDecoration(labelText: 'النوع'),
+                  items: const [
+                    DropdownMenuItem(
+                      value: 'new_memorization',
+                      child: Text('حفظ جديد'),
+                    ),
+                    DropdownMenuItem(value: 'revision', child: Text('مراجعة')),
+                  ],
+                  onChanged: (v) {
+                    setState(() => type = v!);
+                    saveComposer();
+                  },
                 ),
               ),
             ],
@@ -523,6 +653,13 @@ class _WorksheetState extends State<Worksheet> {
                       minHeight: 3,
                     ),
                     const SizedBox(height: 20),
+                    if (storageError != null)
+                      Text(
+                        storageError!,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
                     if (locked) const Text('نسخة للقراءة فقط'),
                     if (error != null)
                       Padding(

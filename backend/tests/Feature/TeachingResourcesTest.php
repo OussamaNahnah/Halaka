@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Actions\SaveTeacher;
+use App\Filament\RelationManagers\CreatedAssignmentsRelationManager;
 use App\Filament\Resources\QuranAssessments\Pages\CreateQuranAssessment;
 use App\Filament\Resources\QuranAssessments\Pages\EditQuranAssessment;
 use App\Filament\Resources\QuranAssessments\Pages\ListQuranAssessments;
@@ -11,10 +12,14 @@ use App\Filament\Resources\QuranAssignments\Pages\CreateQuranAssignment;
 use App\Filament\Resources\QuranAssignments\Pages\EditQuranAssignment;
 use App\Filament\Resources\QuranAssignments\Pages\ListQuranAssignments;
 use App\Filament\Resources\QuranAssignments\QuranAssignmentResource;
+use App\Filament\Resources\Students\Pages\ViewStudent;
+use App\Filament\Resources\Students\RelationManagers\AssignmentsRelationManager;
 use App\Filament\Resources\StudentSessions\Pages\CreateStudentSession;
 use App\Filament\Resources\StudentSessions\Pages\EditStudentSession;
 use App\Filament\Resources\StudentSessions\Pages\ListStudentSessions;
 use App\Filament\Resources\StudentSessions\StudentSessionResource;
+use App\Filament\Resources\TeachingSessions\Pages\ViewTeachingSession;
+use App\Filament\Resources\TeachingSessions\TeachingSessionResource;
 use App\Models\QuranAssessment;
 use App\Models\QuranAssignment;
 use App\Models\Student;
@@ -120,5 +125,28 @@ class TeachingResourcesTest extends TestCase
         }
         $this->assertSame($assignment->id, $assessment->fresh()->quran_assignment_id);
         $this->assertSame($roster->id, $assessment->fresh()->student_session_id);
+    }
+
+    public function test_assignment_origin_is_linked_read_only_and_listed_under_its_session(): void
+    {
+        extract($this->records());
+        $assignment->forceFill(['created_in_session_id' => $session->id])->save();
+        $sessionUrl = TeachingSessionResource::getUrl('view', ['record' => $session->id]);
+        $this->get(QuranAssignmentResource::getUrl('view', ['record' => $assignment->id]))->assertOk()->assertSee('حصة إنشاء الواجب')->assertSee($sessionUrl, false);
+        $this->get(QuranAssignmentResource::getUrl('edit', ['record' => $assignment->id]))->assertOk()->assertSee('حصة إنشاء الواجب');
+        Livewire::test(ListQuranAssignments::class)->assertCanSeeTableRecords([$assignment])->assertSee('حصة الإنشاء')->assertSee($sessionUrl, false);
+        Livewire::test(EditQuranAssignment::class, ['record' => $assignment->id])->fillForm(['created_in_session_id' => null, 'is_passed' => true])->call('save')->assertHasNoFormErrors();
+        $this->assertSame($session->id, $assignment->fresh()->created_in_session_id);
+        $this->assertTrue($assignment->fresh()->is_passed);
+        Livewire::test(AssignmentsRelationManager::class, ['ownerRecord' => $student, 'pageClass' => ViewStudent::class])->assertCanSeeTableRecords([$assignment])->assertSee('حصة الإنشاء');
+        $manager = CreatedAssignmentsRelationManager::class;
+        $page = ViewTeachingSession::class;
+        Livewire::test($manager, ['ownerRecord' => $session, 'pageClass' => $page])->assertCanSeeTableRecords([$assignment]);
+        $legacy = $student->assignments()->create(['surah_name' => 'الملك', 'from_ayah' => 1, 'to_ayah' => 10, 'type' => 'revision']);
+        Livewire::test($manager, ['ownerRecord' => $session, 'pageClass' => $page])->assertCanNotSeeTableRecords([$legacy]);
+        $session->delete();
+        $this->get(QuranAssignmentResource::getUrl('view', ['record' => $assignment->id]))->assertOk()->assertSee($sessionUrl, false);
+        $this->get($sessionUrl)->assertOk();
+        $this->assertSame($session->id, $assignment->fresh()->createdInSession->id);
     }
 }
