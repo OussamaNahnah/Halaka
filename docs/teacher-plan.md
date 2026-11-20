@@ -84,7 +84,10 @@ Keep controllers thin and reuse existing domain logic. Do not add a CRUD endpoin
 | PUT | `/api/profile/password` | Change own password. |
 | GET | `/api/groups` | Accessible groups. |
 | GET | `/api/groups/{groupId}/students` | Group roster. |
-| GET | `/api/students/{studentId}/assignments` | Earlier assignments and associated assessment context. |
+| GET | `/api/students` | Paginated student directory with name search. |
+| GET | `/api/students/{studentId}/summary` | Attendance totals and average for the current teacher’s completed sessions. |
+| GET | `/api/students/{studentId}/assessments` | Paginated assessment history from those sessions. |
+| GET | `/api/students/{studentId}/assignments` | Earlier assignment context; optional paginated pending/passed/all history. |
 | GET | `/api/quran/surahs` | Surahs and ayah counts. |
 | GET | `/api/sessions` | Accepted sessions, paginated. |
 | GET | `/api/sessions/{sessionId}` | Session, student work, and server revision. |
@@ -159,3 +162,8 @@ Tapping server history opens a read-only summary using the existing owned-sessio
 Summary presentation assumes the planned fresh production dataset: concise attendance totals, individual assessment grades/notes, and session-created assignments. Hide empty assignment sections and omit legacy-origin explanation text; existing development records are not automatically linked. Show assignment passing state as current («الحالة الآن»), without presenting it as historical assessment outcome.
 
 Flutter repeat grading: checking «يحتاج إعادة» automatically sets grade 0 and disables its input. Unchecking keeps 0 and allows manual grading again. No configuration dialog or saved default is used. Existing historical grades are not rewritten merely by opening the worksheet.
+
+
+Flutter group changes: before first upload, explicitly changing the group replaces the local roster and assignment context using consistent-revision reads, with confirmation only if at least one student has `evaluated_at` set. Otherwise replace immediately, even if unfinished inputs exist. Create a fresh session UUID, save the replacement in SQLite, and return to the roster. Cancelled changes or failed reads keep the original work. Date/time-only edits keep the roster. Already uploaded sessions keep the historical group/roster in the Flutter editor, matching the existing server roster constraints.
+
+The standalone Flutter Students tab and student-detail screens have been removed at the user’s request. The read-only Laravel student endpoints remain available; session rosters and session summaries are unchanged.

@@ -61,7 +61,7 @@ Project creation, models, migrations, and Filament panel installation are approv
 
 ## Teacher API
 
-The 12 teacher endpoints are implemented in Laravel with JWT authentication, all-group/student reads, owned-session access, and atomic versioned submissions. New assignments record their creation session; legacy origins remain unknown. See the [API contract](docs/teacher-api.md) for setup, authentication, payloads, retries, and conflicts. The separate [teacher app](teacher-app/README.md) is implemented in `teacher-app/`, with profile/JWT storage, memory-only school data, automatic retry while the page is open, and conflict review. Run `npm ci` and `npm run build` there, then open **http://localhost/teacher/** with a Teacher account created in Filament.
+The 15 teacher endpoints are implemented in Laravel with JWT authentication, all-group/student reads, owned-session access, and atomic versioned submissions. New assignments record their creation session; legacy origins remain unknown. See the [API contract](docs/teacher-api.md) for setup, authentication, payloads, retries, and conflicts. The separate [teacher app](teacher-app/README.md) is implemented in `teacher-app/`, with profile/JWT storage, memory-only school data, automatic retry while the page is open, and conflict review. Run `npm ci` and `npm run build` there, then open **http://localhost/teacher/** with a Teacher account created in Filament.
 
 ## Teacher prototype
 

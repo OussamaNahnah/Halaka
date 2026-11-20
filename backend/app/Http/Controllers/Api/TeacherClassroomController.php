@@ -26,9 +26,17 @@ class TeacherClassroomController extends Controller
         return response()->json(['data' => $group->students()->orderBy('name')->get(['students.id', 'students.name'])->map(fn ($row) => ['id' => $row->id, 'name' => $row->name]), 'meta' => SchoolSync::meta()]);
     }
 
-    public function assignments(int $student)
+    public function assignments(Request $request, int $student)
     {
         $student = Student::findOrFail($student);
+
+        if ($request->hasAny(['page', 'per_page', 'status'])) {
+            $request->validate(['page' => ['sometimes', 'integer', 'min:1'], 'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'], 'status' => ['sometimes', 'in:all,pending,passed']]);
+            $query = $student->assignments()->when($request->query('status') === 'pending', fn ($query) => $query->where('is_passed', false))
+                ->when($request->query('status') === 'passed', fn ($query) => $query->where('is_passed', true));
+
+            return TeacherAssignmentResource::collection($query->orderByDesc('id')->paginate($request->integer('per_page', 20)))->additional(['meta' => SchoolSync::meta()]);
+        }
 
         return TeacherAssignmentResource::collection($student->assignments()->with(['assessments.studentSession.session'])->orderBy('id')->get())->additional(['meta' => SchoolSync::meta()]);
     }

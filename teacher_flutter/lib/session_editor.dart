@@ -9,6 +9,7 @@ Future<Json?> showSessionEditor(
   int? groupId,
   String? timestamp,
   bool editing = false,
+  bool allowGroupChange = true,
 }) => showModalBottomSheet<Json>(
   context: context,
   isScrollControlled: true,
@@ -19,6 +20,7 @@ Future<Json?> showSessionEditor(
     groupId: groupId,
     timestamp: timestamp,
     editing: editing,
+    allowGroupChange: allowGroupChange,
   ),
 );
 
@@ -27,12 +29,14 @@ class SessionEditor extends StatefulWidget {
   final int? groupId;
   final String? timestamp;
   final bool editing;
+  final bool allowGroupChange;
   const SessionEditor({
     super.key,
     required this.groups,
     this.groupId,
     this.timestamp,
     this.editing = false,
+    this.allowGroupChange = true,
   });
   @override
   State<SessionEditor> createState() => _SessionEditorState();
@@ -44,7 +48,9 @@ class _SessionEditorState extends State<SessionEditor> {
   @override
   void initState() {
     super.initState();
-    group = widget.groups.any((g) => g['id'] == widget.groupId)
+    group =
+        !widget.allowGroupChange ||
+            widget.groups.any((g) => g['id'] == widget.groupId)
         ? widget.groupId
         : null;
     date =
@@ -68,7 +74,9 @@ class _SessionEditorState extends State<SessionEditor> {
                 child: PageIdentity(
                   widget.editing ? 'تعديل الحصة' : 'حصة جديدة',
                   subtitle: widget.editing
-                      ? 'يبقى الطلاب والعمل المسجل كما هو'
+                      ? widget.allowGroupChange
+                            ? 'تغيير المجموعة يعيد تحميل الطلاب'
+                            : 'طلاب الحصة المحفوظة ثابتون'
                       : 'اختر المجموعة وموعد الحصة',
                 ),
               ),
@@ -86,24 +94,35 @@ class _SessionEditorState extends State<SessionEditor> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                DropdownButtonFormField<int>(
-                  initialValue: group,
-                  isExpanded: true,
-                  decoration: const InputDecoration(labelText: 'المجموعة'),
-                  hint: const Text('اختر مجموعة'),
-                  items: widget.groups
-                      .map(
-                        (g) => DropdownMenuItem<int>(
-                          value: g['id'],
-                          child: Text(
-                            g['name'],
-                            overflow: TextOverflow.ellipsis,
+                if (!widget.allowGroupChange)
+                  InputDecorator(
+                    decoration: const InputDecoration(labelText: 'المجموعة'),
+                    child: Text(
+                      widget.groups
+                              .where((g) => g['id'] == group)
+                              .firstOrNull?['name'] ??
+                          'المجموعة الأصلية',
+                    ),
+                  )
+                else
+                  DropdownButtonFormField<int>(
+                    initialValue: group,
+                    isExpanded: true,
+                    decoration: const InputDecoration(labelText: 'المجموعة'),
+                    hint: const Text('اختر مجموعة'),
+                    items: widget.groups
+                        .map(
+                          (g) => DropdownMenuItem<int>(
+                            value: g['id'],
+                            child: Text(
+                              g['name'],
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (v) => setState(() => group = v),
-                ),
+                        )
+                        .toList(),
+                    onChanged: (v) => setState(() => group = v),
+                  ),
                 const SizedBox(height: 20),
                 const Text(
                   'موعد الحصة',
@@ -155,7 +174,7 @@ class _SessionEditorState extends State<SessionEditor> {
                   icon: const Icon(Icons.schedule_outlined, size: 18),
                   label: Text(timeLabel(context, date)),
                 ),
-                if (widget.groups.isEmpty)
+                if (widget.groups.isEmpty && widget.allowGroupChange)
                   const Padding(
                     padding: EdgeInsets.only(top: 12),
                     child: Text('لا توجد مجموعات متاحة. تواصل مع الإدارة.'),
@@ -168,7 +187,7 @@ class _SessionEditorState extends State<SessionEditor> {
           child: SizedBox(
             width: double.infinity,
             child: FilledButton(
-              onPressed: group == null
+              onPressed: widget.allowGroupChange && group == null
                   ? null
                   : () => Navigator.pop(context, <String, dynamic>{
                       'group_id': group,

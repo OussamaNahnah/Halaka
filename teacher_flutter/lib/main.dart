@@ -602,18 +602,81 @@ class _HomeState extends State<Home> {
 
   Future<void> editMetadata() async {
     final d = draft;
-    if (d == null || d.locked) return;
+    if (d == null || d.locked || busy || uploading) return;
     final selected = await showSessionEditor(
       context,
       groups: groups,
       groupId: d.payload['group_id'],
       timestamp: d.payload['timestamp'],
       editing: true,
+      allowGroupChange: d.id == null,
     );
-    if (selected != null && mounted) {
+    if (selected == null || !mounted || draft != d || d.locked) return;
+    if (selected['group_id'] == d.payload['group_id']) {
       setState(() => d.payload.addAll(selected));
       await persistWork();
+      return;
     }
+    final hasEvaluatedStudent = d.students.any(
+      (student) => student['evaluated_at'] != null,
+    );
+    if (hasEvaluatedStudent &&
+        !await confirm(
+          'تغيير المجموعة',
+          'سيتم تحميل طلاب المجموعة الجديدة وإلغاء التقييمات والملاحظات والواجبات المدخلة في هذه الحصة. هل تريد المتابعة؟',
+        )) {
+      return;
+    }
+    if (!mounted || draft != d) return;
+    await run(() async {
+      for (var attempt = 0; attempt < 3; attempt++) {
+        final response = await api.request(
+          'GET',
+          '/groups/${selected['group_id']}/students',
+        );
+        final revision = response['meta']['sync_revision'];
+        final students = rows(response['data'])
+            .map(
+              (student) => <String, dynamic>{
+                'student_id': student['id'],
+                'name': student['name'],
+                'evaluated_at': null,
+                'assessments': <Json>[],
+                'assignments': <Json>[],
+              },
+            )
+            .toList();
+        final assignments = <int, List<Json>>{};
+        var consistent = true;
+        for (final student in students) {
+          final response = await api.request(
+            'GET',
+            '/students/${student['student_id']}/assignments',
+          );
+          if (response['meta']['sync_revision'] != revision) {
+            consistent = false;
+            break;
+          }
+          assignments[student['student_id']] = rows(response['data']);
+        }
+        if (!consistent) continue;
+        if (!mounted || draft != d || d.locked) return;
+        draft = SessionDraft(
+          payload: {
+            ...selected,
+            'client_uuid': uuid.v4(),
+            'base_sync_revision': revision,
+          },
+          students: students,
+          assignments: assignments,
+        );
+        showRoster = true;
+        Navigator.of(context).popUntil((route) => route.isFirst);
+        await persistWork();
+        return;
+      }
+      throw ApiError(409, 'تغيرت البيانات أثناء التحميل. حاول مجدداً.');
+    });
   }
 
   String groupName(SessionDraft d) =>
